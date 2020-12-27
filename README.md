@@ -1,6 +1,6 @@
 # gotypes
 terminal based typing test using golang
-insipration by [monkeytype](monkeytype.com)
+insipration by [monkeytype](https://monkeytype.com/)
 
 ## Features
 * command line
