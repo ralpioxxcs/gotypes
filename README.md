@@ -1,7 +1,6 @@
 # gotypes
-
-## About
 terminal based typing test using golang
+insipration by [monkeytype](monkeytype.com)
 
 ## Features
 * command line
@@ -16,3 +15,4 @@ $ go get github.com/ralpioxxcs/gotypes
 * https://github.com/jroimartin/gocui
 
 ## License
+See LICENSE file
