@@ -1,7 +1,9 @@
 package app
 
 import (
+	"fmt"
 	c "github.com/jroimartin/gocui"
+	"io/ioutil"
 	"log"
 )
 
@@ -40,32 +42,38 @@ func initailize() (*c.Gui, error) {
 func layout(g *c.Gui) error {
 	tw, th := g.Size()
 
-	// 1. Viewport
-	viewport, err := g.SetView("viewport", lw+1, 0, tw-1, th-ih-1)
+	maxX, maxY := tw-1, th-1
+
+	// Typing window
+	viewport, err := g.SetView("words", 0, 0, maxX, maxY/3)
 	if err != nil && err != c.ErrUnknownView {
 		return err
 	}
-	viewport.Title = "Viewport"
-	viewport.BgColor = c.ColorGreen
+	viewport.Title = "Typing Window"
+	//viewport.BgColor = c.ColorGreen
 	viewport.FgColor = c.ColorWhite
 	viewport.Autoscroll = true
 
-	/* paragraphs init
-	 *
-	 *
-	 *
-	 */
+	// paragraphs init
+	b, err := ioutil.ReadFile("../data/charlieandchcolatefactory.txt")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Fprintf(viewport, "%s", b)
 
 	// 2. Input
-	input, err := g.SetView("input", lw+1, th-ih, tw-1, th-1)
+	_, h := viewport.Size()
+	input, err := g.SetView("input", 0, h/2, tw-1, h+1)
 	if err != nil && err != c.ErrUnknownView {
 		return err
 	}
-	input.Title = "Input"
-	input.BgColor = c.ColorBlack
+	input.Frame = true
+	input.Title = "types here"
+	//input.BgColor = c.ColorBlack
 	input.FgColor = c.ColorYellow
 	input.Editable = true
-	if err = input.SetCursor(0, 0); err != nil {
+	input.Wrap = true
+	if _, err = g.SetCurrentView("input"); err != nil {
 		return err
 	}
 
