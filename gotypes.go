@@ -3,5 +3,6 @@ package main
 import "github.com/ralpioxxcs/gotypes/app"
 
 func main() {
-	app.Run()
+	flex := app.Setup()
+	app.Run(flex)
 }
