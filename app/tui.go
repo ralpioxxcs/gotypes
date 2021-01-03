@@ -13,12 +13,11 @@ Bring to the table win-win survival strategies to ensure proactive domination. A
 Capitalize on low hanging fruit to identify a ballpark value added activity to beta test. Override the digital divide with additional clickthroughs from DevOps. Nanotechnology immersion along the information highway will close the loop on focusing solely on the bottom line.
 [yellow]Press Enter, then Tab/Backtab for word selections`
 
-var app tview.Application
-var color palette
-
+var app *App
 var logger log.Logger
 
 //--------------------------------------------------------------------
+
 type MenuAction int
 
 const (
@@ -103,22 +102,24 @@ type TypingWidget struct {
 
 func (t *TypingWidget) ApplyColor(p palette) {
 	t.SetTitleColor(p.title)
-	t.SetBorderColor(p.border)
-
 	t.text.SetBackgroundColor(p.background)
 	t.text.SetTextColor(p.foreground)
+	t.text.SetBorderColor(p.border)
 	t.input.SetBackgroundColor(p.background)
 	t.input.SetFieldTextColor(p.foreground)
 	t.input.SetFieldBackgroundColor(p.border)
+	t.input.SetBorderColor(p.border)
 }
 
-func NewTypingBox() *TypingWidget {
+func NewTypingWidget() *TypingWidget {
 	t := &TypingWidget{
 		Flex:   tview.NewFlex(),
 		text:   tview.NewTextView(),
 		input:  tview.NewInputField(),
 		buffer: corporate,
 	}
+
+	t.text.SetBorder(true)
 
 	t.input.
 		SetPlaceholder("Type to start").
@@ -127,15 +128,23 @@ func NewTypingBox() *TypingWidget {
 		SetPlaceholderTextColor(tcell.ColorBlack).
 		SetFieldBackgroundColor(tcell.ColorGold).
 		SetFieldTextColor(tcell.ColorBlack)
+	t.input.SetBorder(true)
 
 	t.SetDirection(tview.FlexRow).
-		AddItem(t.text, 0, 9, false).
+		AddItem(t.text, 0, 15, false).
 		AddItem(t.input, 0, 1, true)
 
-	t.SetBorder(true)
 	t.SetTitle("TypingWidget")
 	t.text.SetText("\n\n" + t.buffer + "\n\n")
 	t.text.SetTextAlign(tview.AlignCenter)
+
+	t.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key != nil {
+			logger.Println("wtf")
+			app.SetFocus(t.input)
+		}
+		return event
+	})
 
 	return t
 }
@@ -143,24 +152,22 @@ func NewTypingBox() *TypingWidget {
 //--------------------------------------------------------------------
 
 // Dashboard is a frame which display general typing information ( wpm, time ,,)
-type Dashboard struct {
+type StatusWidget struct {
 	*tview.Box
-	colors  palette
 	wpm     int
 	eplased time.Time
 }
 
-func (t *Dashboard) ApplyColor(p palette) {
+func (t *StatusWidget) ApplyColor(p palette) {
 	t.SetBackgroundColor(p.background)
 	t.SetTitleColor(p.title)
 	t.SetBorderColor(p.border)
 }
 
-func NewDashboard() *Dashboard {
-	d := &Dashboard{
-		Box:    tview.NewBox(),
-		colors: color,
-		wpm:    0,
+func NewStatusWidget() *StatusWidget {
+	d := &StatusWidget{
+		Box: tview.NewBox(),
+		wpm: 0,
 	}
 	d.SetBorder(true)
 	d.SetTitle("Result")
@@ -173,7 +180,7 @@ type App struct {
 	flex    *tview.Flex
 	sidebar *ThemeList
 	body    *TypingWidget
-	result  *Dashboard
+	result  *StatusWidget
 }
 
 func (a *App) Draw(screen tcell.Screen) {
@@ -219,8 +226,8 @@ func NewApp() *App {
 		Application: tview.NewApplication(),
 		flex:        tview.NewFlex(),
 		sidebar:     NewThemeList(),
-		body:        NewTypingBox(),
-		result:      NewDashboard(),
+		body:        NewTypingWidget(),
+		result:      NewStatusWidget(),
 	}
 
 	a.sidebar.SetActionFunc(a.menuAction)
@@ -229,9 +236,13 @@ func NewApp() *App {
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(a.body, 0, 8, true).
 			AddItem(a.result, 0, 2, false), 0, 9, true)
+	a.menuAction(MenuActionImportTheme)
 
 	a.SetRoot(a.flex, true)
 	a.EnableMouse(true)
+
+	// pass var's address to global
+	app = a
 
 	return a
 }

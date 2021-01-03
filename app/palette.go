@@ -39,10 +39,10 @@ type palette struct {
 func Dark() palette {
 	return palette{
 		name:       "Dark",
-		title:      tcell.GetColor("#eee"),
-		background: tcell.GetColor("#111"),
-		foreground: tcell.GetColor("#eee"),
-		border:     tcell.GetColor("#444"),
+		title:      tcell.GetColor("#eeeeee"),
+		background: tcell.GetColor("#111111"),
+		foreground: tcell.GetColor("#eeeeee"),
+		border:     tcell.GetColor("#444444"),
 		extra:      tcell.GetColor("#da3333"),
 	}
 }
