@@ -46,8 +46,6 @@ func NewThemeList() *ThemeList {
 		l.AddItem(key, "", 0, l.doApply)
 	}
 
-	l.ApplyColor(l.theme["Dots"])
-
 	return l
 }
 
@@ -95,22 +93,43 @@ func (t *ThemeList) doApply() {
 //--------------------------------------------------------------------
 
 // TypingBox is a box which display words be typed
-type TypingBox struct {
-	*tview.TextView
-	colors palette
+type TypingWidget struct {
+	*tview.Flex
+	text   *tview.TextView
+	input  *tview.InputField
 	buffer string
 }
 
-func NewTypingBox() *TypingBox {
-	t := &TypingBox{
-		TextView: tview.NewTextView(),
-		colors:   color,
-		buffer:   corporate,
+func (t *TypingWidget) ApplyColor(p palette) {
+	t.SetBackgroundColor(p.background)
+	t.SetTitleColor(p.title)
+	t.SetBorderColor(p.border)
+}
+
+func NewTypingBox() *TypingWidget {
+	t := &TypingWidget{
+		Flex:   tview.NewFlex(),
+		text:   tview.NewTextView(),
+		input:  tview.NewInputField(),
+		buffer: corporate,
 	}
+
+	t.input.
+		SetPlaceholder("Type to start").
+		SetLabelWidth(0).
+		SetFieldWidth(0).
+		SetPlaceholderTextColor(tcell.ColorBlack).
+		SetFieldBackgroundColor(tcell.ColorGold).
+		SetFieldTextColor(tcell.ColorBlack)
+
+	t.SetDirection(tview.FlexRow).
+		AddItem(t.text, 0, 9, false).
+		AddItem(t.input, 0, 1, true)
+
 	t.SetBorder(true)
-	t.SetTitle("TypingBox")
-	t.SetText("\n\n" + t.buffer + "\n\n")
-	t.SetTextAlign(tview.AlignCenter)
+	t.SetTitle("TypingWidget")
+	t.text.SetText("\n\n" + t.buffer + "\n\n")
+	t.text.SetTextAlign(tview.AlignCenter)
 
 	return t
 }
@@ -123,6 +142,12 @@ type Dashboard struct {
 	colors  palette
 	wpm     int
 	eplased time.Time
+}
+
+func (t *Dashboard) ApplyColor(p palette) {
+	t.SetBackgroundColor(p.background)
+	t.SetTitleColor(p.title)
+	t.SetBorderColor(p.border)
 }
 
 func NewDashboard() *Dashboard {
@@ -138,10 +163,10 @@ func NewDashboard() *Dashboard {
 
 //--------------------------------------------------------------------
 type App struct {
-	app     *tview.Application
+	*tview.Application
 	flex    *tview.Flex
 	sidebar *ThemeList
-	body    *TypingBox
+	body    *TypingWidget
 	result  *Dashboard
 }
 
@@ -152,10 +177,6 @@ func (a *App) Draw(screen tcell.Screen) {
 func (a *App) GetRect() (int, int, int, int) {
 	return a.flex.GetRect()
 }
-
-//func (a *App) SetRect() (x, y, width, height int) {
-//  a.flex.SetRect(x, y, width, height)
-//}
 
 func (a *App) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
 	return func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
@@ -180,6 +201,8 @@ func (a *App) menuAction(action MenuAction) {
 	case MenuActionNone:
 	case MenuActionImportTheme:
 		a.sidebar.ApplyColor(a.sidebar.theme[a.sidebar.GetCurrentTheme()])
+		a.body.ApplyColor(a.sidebar.theme[a.sidebar.GetCurrentTheme()])
+		a.result.ApplyColor(a.sidebar.theme[a.sidebar.GetCurrentTheme()])
 	}
 }
 
@@ -187,21 +210,22 @@ func (a *App) menuAction(action MenuAction) {
 
 func NewApp() *App {
 	a := &App{
-		app:     tview.NewApplication(),
-		flex:    tview.NewFlex(),
-		sidebar: NewThemeList(),
-		body:    NewTypingBox(),
-		result:  NewDashboard(),
+		Application: tview.NewApplication(),
+		flex:        tview.NewFlex(),
+		sidebar:     NewThemeList(),
+		body:        NewTypingBox(),
+		result:      NewDashboard(),
 	}
 
 	a.sidebar.SetActionFunc(a.menuAction)
 
-	a.flex.AddItem(a.sidebar, 0, 1, true).
+	a.flex.AddItem(a.sidebar, 0, 1, false).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(a.body, 0, 8, true).
-			AddItem(a.result, 0, 2, false), 0, 9, false)
+			AddItem(a.result, 0, 2, false), 0, 9, true)
 
-	a.app.SetRoot(a.flex, true)
+	a.SetRoot(a.flex, true)
+	a.EnableMouse(true)
 
 	return a
 }
@@ -216,10 +240,7 @@ func Run(a *App) {
 	logger.SetOutput(f)
 	logger.Println("-----------------------------")
 
-	if err := a.app.Run(); err != nil {
+	if err := a.Run(); err != nil {
 		panic(err)
 	}
-}
-
-func applyColor() {
 }
