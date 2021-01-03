@@ -53,6 +53,7 @@ func (t *ThemeList) ApplyColor(p palette) {
 	t.SetBackgroundColor(p.background)
 	t.SetTitleColor(p.title)
 	t.SetBorderColor(p.border)
+	t.SetMainTextColor(p.foreground)
 	t.SetSelectedTextColor(p.extra)
 }
 
@@ -101,9 +102,14 @@ type TypingWidget struct {
 }
 
 func (t *TypingWidget) ApplyColor(p palette) {
-	t.SetBackgroundColor(p.background)
 	t.SetTitleColor(p.title)
 	t.SetBorderColor(p.border)
+
+	t.text.SetBackgroundColor(p.background)
+	t.text.SetTextColor(p.foreground)
+	t.input.SetBackgroundColor(p.background)
+	t.input.SetFieldTextColor(p.foreground)
+	t.input.SetFieldBackgroundColor(p.border)
 }
 
 func NewTypingBox() *TypingWidget {

@@ -10,6 +10,7 @@ var themesString = []string{
 	"Dots",
 	"Dualshot",
 	"Oblivion",
+	"Olive",
 }
 
 type themes map[string]palette
@@ -21,6 +22,7 @@ func NewThemes() themes {
 		"Dots":     Dots(),
 		"Dualshot": Dualshot(),
 		"Oblivion": Oblivion(),
+		"Olive":    Olive(),
 	}
 }
 
@@ -90,6 +92,18 @@ func Oblivion() palette {
 		foreground: tcell.GetColor("#f7f5f1"),
 		border:     tcell.GetColor("#5d6263"),
 		extra:      tcell.GetColor("#dd452e"),
+	}
+}
+
+// Oblivion returns oblivion theme colour code
+func Olive() palette {
+	return palette{
+		name:       "Olive",
+		title:      tcell.GetColor("#92946f"),
+		background: tcell.GetColor("#e9e5cc"),
+		foreground: tcell.GetColor("#373731"),
+		border:     tcell.GetColor("#b7b39e"),
+		extra:      tcell.GetColor("#cf2f2f"),
 	}
 }
 
