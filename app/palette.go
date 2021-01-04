@@ -11,6 +11,8 @@ var themesString = []string{
 	"Dualshot",
 	"Oblivion",
 	"Olive",
+	"Bento",
+	"Laser",
 }
 
 type themes map[string]palette
@@ -23,6 +25,8 @@ func NewThemes() themes {
 		"Dualshot": Dualshot(),
 		"Oblivion": Oblivion(),
 		"Olive":    Olive(),
+		"Bento":    Bento(),
+		"Laser":    Laser(),
 	}
 }
 
@@ -95,7 +99,7 @@ func Oblivion() palette {
 	}
 }
 
-// Oblivion returns oblivion theme colour code
+// Olive returns gmk olive theme colour code
 func Olive() palette {
 	return palette{
 		name:       "Olive",
@@ -104,6 +108,30 @@ func Olive() palette {
 		foreground: tcell.GetColor("#373731"),
 		border:     tcell.GetColor("#b7b39e"),
 		extra:      tcell.GetColor("#cf2f2f"),
+	}
+}
+
+// Bento returns gmk bento theme colour code
+func Bento() palette {
+	return palette{
+		name:       "Bento",
+		title:      tcell.GetColor("#ff7a90"),
+		background: tcell.GetColor("#2d394d"),
+		foreground: tcell.GetColor("#fffaf8"),
+		border:     tcell.GetColor("#4a768d"),
+		extra:      tcell.GetColor("#ee2a3a"),
+	}
+}
+
+// Laser returns gmk laser theme colour code
+func Laser() palette {
+	return palette{
+		name:       "Laser",
+		title:      tcell.GetColor("#009eaf"),
+		background: tcell.GetColor("#221b44"),
+		foreground: tcell.GetColor("#dbe7e8"),
+		border:     tcell.GetColor("#b82356"),
+		extra:      tcell.GetColor("#a8d400"),
 	}
 }
 

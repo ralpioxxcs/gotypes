@@ -131,7 +131,7 @@ func NewTypingWidget() *TypingWidget {
 	t.input.SetBorder(true)
 
 	t.SetDirection(tview.FlexRow).
-		AddItem(t.text, 0, 15, false).
+		AddItem(t.text, 0, 10, false).
 		AddItem(t.input, 0, 1, true)
 
 	t.SetTitle("TypingWidget")
