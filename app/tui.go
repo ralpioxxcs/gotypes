@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"log"
@@ -222,6 +223,10 @@ func (a *App) menuAction(action MenuAction) {
 //--------------------------------------------------------
 
 func NewApp() *App {
+	c := tcell.GetColor("#221b44")
+	fmt.Println("True color :", c.TrueColor())
+	fmt.Println("True color (hex) :", c.TrueColor().Hex())
+
 	a := &App{
 		Application: tview.NewApplication(),
 		flex:        tview.NewFlex(),
@@ -249,7 +254,7 @@ func NewApp() *App {
 
 func Run(a *App) {
 	// logging
-	f, err := os.OpenFile("filename", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	f, err := os.OpenFile("log.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		logger.Fatal(err)
 	}
