@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 	"log"
@@ -141,7 +140,6 @@ func NewTypingWidget() *TypingWidget {
 
 	t.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key != nil {
-			logger.Println("wtf")
 			app.SetFocus(t.input)
 		}
 		return event
@@ -176,6 +174,7 @@ func NewStatusWidget() *StatusWidget {
 }
 
 //--------------------------------------------------------------------
+
 type App struct {
 	*tview.Application
 	flex    *tview.Flex
@@ -223,10 +222,6 @@ func (a *App) menuAction(action MenuAction) {
 //--------------------------------------------------------
 
 func NewApp() *App {
-	c := tcell.GetColor("#221b44")
-	fmt.Println("True color :", c.TrueColor())
-	fmt.Println("True color (hex) :", c.TrueColor().Hex())
-
 	a := &App{
 		Application: tview.NewApplication(),
 		flex:        tview.NewFlex(),

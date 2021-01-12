@@ -13,20 +13,22 @@ var themesString = []string{
 	"Olive",
 	"Bento",
 	"Laser",
+	"Hammerhead",
 }
 
 type themes map[string]palette
 
 func NewThemes() themes {
 	return themes{
-		"Dark":     Dark(),
-		"Dracula":  Dracula(),
-		"Dots":     Dots(),
-		"Dualshot": Dualshot(),
-		"Oblivion": Oblivion(),
-		"Olive":    Olive(),
-		"Bento":    Bento(),
-		"Laser":    Laser(),
+		"Dark":       Dark(),
+		"Dracula":    Dracula(),
+		"Dots":       Dots(),
+		"Dualshot":   Dualshot(),
+		"Oblivion":   Oblivion(),
+		"Olive":      Olive(),
+		"Bento":      Bento(),
+		"Laser":      Laser(),
+		"Hammerhead": Hammerhead(),
 	}
 }
 
@@ -135,12 +137,14 @@ func Laser() palette {
 	}
 }
 
-//// ModernDolchLight returns moderndolchlight theme colour code
-//func ModernDolchLight
-//  title = tcell.GetColor("#a5a096")
-//  background = tcell.GetColor("#313231")
-//  foreground = tcell.GetColor("f7f5f1")
-//  border = tcell.GetColor("5d6263")
-//  extra = tcell.GetColor("dd452e")
-//  return p
-//}
+// Hammerhead returns gmk laser theme colour code
+func Hammerhead() palette {
+	return palette{
+		name:       "Hammerhead",
+		title:      tcell.GetColor("#4fcdb9"),
+		background: tcell.GetColor("#030613"),
+		foreground: tcell.GetColor("#e2f1f5"),
+		border:     tcell.GetColor("#1e283a"),
+		extra:      tcell.GetColor("#e32b2b"),
+	}
+}
