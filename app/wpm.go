@@ -1,11 +1,15 @@
 package app
 
 import (
-	"fmt"
+	"time"
 )
 
-func Test() {
-	fmt.Println("wpm calcu")
+// Stats describe general stats (wpm, timer ..)
+type Stats struct {
+	CurrentWord string
+	Words       []string
+	StartTime   time.Time
+	wpm         string
 }
 
 // paintDiff returns an tview-painted string displaying the difference

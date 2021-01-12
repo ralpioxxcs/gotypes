@@ -151,22 +151,20 @@ func NewTypingWidget() *TypingWidget {
 //--------------------------------------------------------------------
 
 // Dashboard is a frame which display general typing information ( wpm, time ,,)
-type StatusWidget struct {
+type StatsWidget struct {
 	*tview.Box
-	wpm     int
-	eplased time.Time
+	st Stats
 }
 
-func (t *StatusWidget) ApplyColor(p palette) {
+func (t *StatsWidget) ApplyColor(p palette) {
 	t.SetBackgroundColor(p.background)
 	t.SetTitleColor(p.title)
 	t.SetBorderColor(p.border)
 }
 
-func NewStatusWidget() *StatusWidget {
-	d := &StatusWidget{
+func NewStatusWidget() *StatsWidget {
+	d := &StatsWidget{
 		Box: tview.NewBox(),
-		wpm: 0,
 	}
 	d.SetBorder(true)
 	d.SetTitle("Result")
@@ -180,7 +178,7 @@ type App struct {
 	flex    *tview.Flex
 	sidebar *ThemeList
 	body    *TypingWidget
-	result  *StatusWidget
+	result  *StatsWidget
 }
 
 func (a *App) Draw(screen tcell.Screen) {
