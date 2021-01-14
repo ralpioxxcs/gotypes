@@ -5,7 +5,6 @@ import (
 	"github.com/rivo/tview"
 	"log"
 	"os"
-	"time"
 )
 
 const corporate = `Leverage agile frameworks to provide a robust synopsis for high level overviews. Iterative approaches to corporate strategy foster collaborative thinking to further the overall value proposition. Organically grow the holistic world view of disruptive innovation via workplace diversity and empowerment.
@@ -14,7 +13,7 @@ Capitalize on low hanging fruit to identify a ballpark value added activity to b
 [yellow]Press Enter, then Tab/Backtab for word selections`
 
 var app *App
-var logger log.Logger
+var Logger log.Logger
 
 //--------------------------------------------------------------------
 
@@ -93,6 +92,7 @@ func (t *ThemeList) doApply() {
 //--------------------------------------------------------------------
 
 // TypingBox is a box which display words be typed
+// it include tview TextView , InputField struct
 type TypingWidget struct {
 	*tview.Flex
 	text   *tview.TextView
@@ -150,12 +150,14 @@ func NewTypingWidget() *TypingWidget {
 
 //--------------------------------------------------------------------
 
-// Dashboard is a frame which display general typing information ( wpm, time ,,)
+// StatsWidget is frame which display general typing information ( wpm, time ,,)
+// it include tview Box struct
 type StatsWidget struct {
 	*tview.Box
 	st Stats
 }
 
+// ApplyColor set color
 func (t *StatsWidget) ApplyColor(p palette) {
 	t.SetBackgroundColor(p.background)
 	t.SetTitleColor(p.title)
@@ -173,12 +175,18 @@ func NewStatusWidget() *StatsWidget {
 
 //--------------------------------------------------------------------
 
+/* App is entire tui struct including tview flex struct
+ * it consists of each widgets (sidebar, body, status)
+ * - sidebar : it lists color themes
+ * - body    : display words and current carrot interactively
+ * - stats   : it shows current status such as wpm, time ..
+ */
 type App struct {
 	*tview.Application
 	flex    *tview.Flex
 	sidebar *ThemeList
 	body    *TypingWidget
-	result  *StatsWidget
+	stats   *StatsWidget
 }
 
 func (a *App) Draw(screen tcell.Screen) {
@@ -207,33 +215,35 @@ func (a *App) Blur() {
 	a.flex.Blur()
 }
 
+// menuAction apply current theme each widget
 func (a *App) menuAction(action MenuAction) {
 	switch action {
 	case MenuActionNone:
 	case MenuActionImportTheme:
 		a.sidebar.ApplyColor(a.sidebar.theme[a.sidebar.GetCurrentTheme()])
 		a.body.ApplyColor(a.sidebar.theme[a.sidebar.GetCurrentTheme()])
-		a.result.ApplyColor(a.sidebar.theme[a.sidebar.GetCurrentTheme()])
+		a.stats.ApplyColor(a.sidebar.theme[a.sidebar.GetCurrentTheme()])
 	}
 }
 
-//--------------------------------------------------------
-
+// NewApp returns initialized App struct
 func NewApp() *App {
 	a := &App{
 		Application: tview.NewApplication(),
 		flex:        tview.NewFlex(),
 		sidebar:     NewThemeList(),
 		body:        NewTypingWidget(),
-		result:      NewStatusWidget(),
+		stats:       NewStatusWidget(),
 	}
 
+	// set function to sidebar
 	a.sidebar.SetActionFunc(a.menuAction)
 
+	// set body frame
 	a.flex.AddItem(a.sidebar, 0, 1, false).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(a.body, 0, 8, true).
-			AddItem(a.result, 0, 2, false), 0, 9, true)
+			AddItem(a.stats, 0, 2, false), 0, 9, true)
 	a.menuAction(MenuActionImportTheme)
 
 	a.SetRoot(a.flex, true)
@@ -246,15 +256,16 @@ func NewApp() *App {
 }
 
 func Run(a *App) {
-	// logging
+	// logger
 	f, err := os.OpenFile("log.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
-		logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 	defer f.Close()
-	logger.SetOutput(f)
-	logger.Println("-----------------------------")
+	Logger.SetOutput(f)
+	Logger.Println("-----------------------------")
 
+	// Run tui main
 	if err := a.Run(); err != nil {
 		panic(err)
 	}
