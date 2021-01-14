@@ -4,12 +4,14 @@ import (
 	"time"
 )
 
-// Stats describe general stats (wpm, timer ..)
+// Stats describe general stats (wpm, time, accuracy ..)
 type Stats struct {
 	CurrentWord string
 	Words       []string
 	StartTime   time.Time
 	wpm         string
+	accuracy    int
+	count       int
 }
 
 // paintDiff returns an tview-painted string displaying the difference

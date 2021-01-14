@@ -150,26 +150,48 @@ func NewTypingWidget() *TypingWidget {
 
 //--------------------------------------------------------------------
 
+type keyboard struct {
+	temp string
+}
+
 // StatsWidget is frame which display general typing information ( wpm, time ,,)
-// it include tview Box struct
+// it include tview TextView struct
 type StatsWidget struct {
-	*tview.Box
-	st Stats
+	*tview.Flex
+	//textbox [...]*tview.TextView
+	wpm *tview.TextView
+	acc *tview.TextView
+	cnt *tview.TextView
+	pic keyboard
+	st  Stats
 }
 
 // ApplyColor set color
 func (t *StatsWidget) ApplyColor(p palette) {
 	t.SetBackgroundColor(p.background)
+	t.wpm.SetBackgroundColor(p.background)
+	t.acc.SetBackgroundColor(p.background)
+	t.cnt.SetBackgroundColor(p.background)
 	t.SetTitleColor(p.title)
 	t.SetBorderColor(p.border)
 }
 
 func NewStatusWidget() *StatsWidget {
 	d := &StatsWidget{
-		Box: tview.NewBox(),
+		Flex: tview.NewFlex(),
+		wpm:  tview.NewTextView().SetText("WPM : ").SetTextAlign(tview.AlignLeft),
+		acc:  tview.NewTextView().SetText("ACCURACY : ").SetTextAlign(tview.AlignLeft),
+		cnt:  tview.NewTextView().SetText("COUNT : ").SetTextAlign(tview.AlignLeft),
 	}
+
+	d.Flex.SetDirection(tview.FlexRow).
+		AddItem(d.wpm, 0, 1, false).
+		AddItem(d.acc, 0, 1, false).
+		AddItem(d.cnt, 0, 1, false)
+
 	d.SetBorder(true)
-	d.SetTitle("Result")
+	d.SetTitle("Stats")
+
 	return d
 }
 
@@ -243,7 +265,7 @@ func NewApp() *App {
 	a.flex.AddItem(a.sidebar, 0, 1, false).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(a.body, 0, 8, true).
-			AddItem(a.stats, 0, 2, false), 0, 9, true)
+			AddItem(a.stats, 0, 1, false), 0, 9, true)
 	a.menuAction(MenuActionImportTheme)
 
 	a.SetRoot(a.flex, true)
