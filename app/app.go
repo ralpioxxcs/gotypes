@@ -1,10 +1,11 @@
 package app
 
 import (
-	"github.com/gdamore/tcell"
-	"github.com/rivo/tview"
+	"fmt"
 
+	"github.com/gdamore/tcell"
 	"github.com/ralpioxxcs/gotypes/app/widget"
+	"github.com/rivo/tview"
 )
 
 /* App is entire tui struct including tview flex struct
@@ -78,7 +79,9 @@ func NewApp() *App {
 		}
 		return event
 	})
-	a.typing.Input.SetChangedFunc(test)
+	a.typing.Input.SetChangedFunc(startTyping)
+	a.typing.Input.SetDoneFunc(diffText)
+	//a.typing.Input.SetFinishedFunc(finishtype)
 
 	// set typing frame
 	a.flex.AddItem(a.sidebar, 0, 1, false).
@@ -90,10 +93,43 @@ func NewApp() *App {
 	a.SetRoot(a.flex, true)
 	a.EnableMouse(true)
 
+	core = a
+
 	return a
 }
 
-func test(text string) {
-	Logger.Println(text)
+// App instance handler
+var core *App
 
+// startTyping process typing functions
+// * text : current text
+func startTyping(text string) {
+
+	/*
+	* store start time & elapsed
+	* compare current words with indicating words
+	*
+	 */
+
+	core.stats.Init(core.typing.GetSentence())
+
+	//ticker := time.NewTicker(time.Millisecond * 100)
+	go func() {
+		//for t := range ticker.C {
+
+		//}
+		core.QueueUpdateDraw(func() {
+			core.stats.Wpm.SetText(fmt.Sprintf("WPM : %.0f", core.stats.GetWpm()))
+			core.stats.Acc.SetText(fmt.Sprintf("ACC : %d", core.stats.GetElapsed()))
+		})
+	}()
+}
+
+// diffText handles each event keys
+func diffText(key tcell.Key) {
+	if key == tcell.KeyEnter {
+		Logger.Println("enter")
+	} else if key == tcell.KeyBackspace {
+		Logger.Println("backspace")
+	}
 }
