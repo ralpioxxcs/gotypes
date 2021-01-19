@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gdamore/tcell"
 	"github.com/ralpioxxcs/gotypes/app/widget"
@@ -80,7 +81,7 @@ func NewApp() *App {
 		return event
 	})
 	a.typing.Input.SetChangedFunc(startTyping)
-	a.typing.Input.SetDoneFunc(diffText)
+	//a.typing.Input.SetDoneFunc(diffText)
 	//a.typing.Input.SetFinishedFunc(finishtype)
 
 	// set typing frame
@@ -113,15 +114,21 @@ func startTyping(text string) {
 
 	core.stats.Init(core.typing.GetSentence())
 
-	//ticker := time.NewTicker(time.Millisecond * 100)
 	go func() {
-		//for t := range ticker.C {
+		timeout := time.After(5 * time.Second)
+		ticker := time.NewTicker(time.Millisecond * 50)
+		for range ticker.C {
 
-		//}
-		core.QueueUpdateDraw(func() {
-			core.stats.Wpm.SetText(fmt.Sprintf("WPM : %.0f", core.stats.GetWpm()))
-			core.stats.Acc.SetText(fmt.Sprintf("ACC : %d", core.stats.GetElapsed()))
-		})
+			select {
+			case <-timeout:
+				return
+			default:
+				core.QueueUpdateDraw(func() {
+					core.stats.Wpm.SetText(fmt.Sprintf("WPM : %.0f", core.stats.GetWpm()))
+					core.stats.Timer.SetText(fmt.Sprintf("TIME : %.02f sec", core.stats.GetElapsed()))
+				})
+			}
+		}
 	}()
 }
 
