@@ -112,24 +112,32 @@ func startTyping(text string) {
 	*
 	 */
 
-	core.stats.Init(core.typing.GetSentence())
+	if !core.stats.IsStarted() {
+		core.stats.Init(core.typing.GetSentence())
 
-	go func() {
-		timeout := time.After(5 * time.Second)
-		ticker := time.NewTicker(time.Millisecond * 50)
-		for range ticker.C {
-
-			select {
-			case <-timeout:
-				return
-			default:
-				core.QueueUpdateDraw(func() {
-					core.stats.Wpm.SetText(fmt.Sprintf("WPM : %.0f", core.stats.GetWpm()))
-					core.stats.Timer.SetText(fmt.Sprintf("TIME : %.02f sec", core.stats.GetElapsed()))
-				})
+		go func() {
+			// set timeout (5 seconds) & update stats each 50 miliseconds tick
+			timeout := time.After(5 * time.Second)
+			ticker := time.NewTicker(time.Millisecond * 50)
+			for range ticker.C {
+				select {
+				case <-timeout:
+					return
+				default:
+					// Update text stats
+					core.QueueUpdateDraw(func() {
+						core.stats.Wpm.SetText(fmt.Sprintf("Wpm : %.0f", core.stats.GetWpm()))
+						core.stats.Accuracy.SetText(fmt.Sprintf("Accuracy : %d", core.stats.GetAccuracy()))
+						core.stats.Timer.SetText(fmt.Sprintf("Time : %.02f sec", core.stats.GetElapsed()))
+					})
+				}
 			}
-		}
-	}()
+		}()
+	}
+
+	if len(core.stats.Stats.CurrentWord) == len(text) {
+		Logger.Println("fine")
+	}
 }
 
 // diffText handles each event keys
