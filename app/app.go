@@ -116,7 +116,7 @@ func startTyping(text string) {
 		core.stats.Init(core.typing.GetSentence())
 
 		go func() {
-			// set timeout (5 seconds) & update stats each 50 miliseconds tick
+			// set timeout (5 seconds) & update stats each 100 miliseconds tick
 			timeout := time.After(5 * time.Second)
 			ticker := time.NewTicker(time.Millisecond * 50)
 			for range ticker.C {
@@ -135,9 +135,13 @@ func startTyping(text string) {
 		}()
 	}
 
-	if len(core.stats.Stats.CurrentWord) == len(text) {
-		Logger.Println("fine")
+	// compare typing word with target word & coloring , underlining
+	core.typing.Text.SetText(diff(text, core.stats.Stats.Sentence))
+
+	// compare & check text length
+	if len(core.stats.Stats.Sentence) == len(text) {
 	}
+
 }
 
 // diffText handles each event keys
@@ -147,4 +151,16 @@ func diffText(key tcell.Key) {
 	} else if key == tcell.KeyBackspace {
 		Logger.Println("backspace")
 	}
+}
+
+// diff returns colored string which compareed
+func diff(curr string, target string) (colored string) {
+	// Leverage agile frameworks to provide
+	// Lever
+	for i, _ := range curr {
+		if curr[i] == target[i] {
+			colored = "[green]" + curr
+		}
+	}
+	return
 }

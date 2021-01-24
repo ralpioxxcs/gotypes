@@ -14,6 +14,7 @@ var themesString = []string{
 	"Bento",
 	"Laser",
 	"Hammerhead",
+	"8008",
 }
 
 type themes map[string]palette
@@ -29,6 +30,7 @@ func NewThemes() themes {
 		"Bento":      Bento(),
 		"Laser":      Laser(),
 		"Hammerhead": Hammerhead(),
+		"8008":       t8008(),
 	}
 }
 
@@ -137,7 +139,7 @@ func Laser() palette {
 	}
 }
 
-// Hammerhead returns gmk laser theme colour code
+// Hammerhead returns gmk hammerhead theme colour code
 func Hammerhead() palette {
 	return palette{
 		name:       "Hammerhead",
@@ -146,5 +148,17 @@ func Hammerhead() palette {
 		foreground: tcell.GetColor("#e2f1f5"),
 		border:     tcell.GetColor("#1e283a"),
 		extra:      tcell.GetColor("#e32b2b"),
+	}
+}
+
+// t8008 returns gmk 8008 theme colour code
+func t8008() palette {
+	return palette{
+		name:       "8008",
+		title:      tcell.GetColor("#f44c7f"),
+		background: tcell.GetColor("#333a45"),
+		foreground: tcell.GetColor("#e9ecf0"),
+		border:     tcell.GetColor("#939eae"),
+		extra:      tcell.GetColor("#da3333"),
 	}
 }

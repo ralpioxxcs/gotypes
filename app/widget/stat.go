@@ -12,13 +12,13 @@ type keyboard struct {
 
 // Stats describe general stats (wpm, time, accuracy ..)
 type stats struct {
-	Index       int
-	CurrentWord string
-	Words       []string
-	StartTime   time.Time
-	wpm         float64
-	accuracy    int
-	count       int
+	Index     int
+	Sentence  string
+	Words     []string
+	StartTime time.Time
+	wpm       float64
+	accuracy  int
+	count     int
 }
 
 // StatsWidget is frame which display general typing information ( wpm, time ,,)
@@ -55,10 +55,11 @@ func (t *StatsWidget) Init(sentence string) {
 
 	// split sentence into words
 	t.Stats.Words = strings.Split(sentence, " ")
-	t.Stats.CurrentWord = t.Stats.Words[t.Stats.Index]
+	t.Stats.Sentence = sentence
 	t.start = true
 }
 
+// IsStarted returns typing is started
 func (t *StatsWidget) IsStarted() bool {
 	return t.start
 }
@@ -80,11 +81,11 @@ func (t *StatsWidget) GetElapsed() float64 {
 
 func NewStats() *stats {
 	s := &stats{
-		Index:       0,
-		CurrentWord: "",
-		wpm:         0,
-		accuracy:    0,
-		count:       0,
+		Index:    0,
+		Sentence: "",
+		wpm:      0,
+		accuracy: 0,
+		count:    0,
 	}
 	return s
 }
