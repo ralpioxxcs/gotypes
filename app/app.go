@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	//"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -136,7 +137,7 @@ func startTyping(text string) {
 	}
 
 	// compare typing word with target word & coloring , underlining
-	core.typing.Text.SetText(diff(text, core.stats.Stats.Sentence))
+	core.typing.Text.SetText("\n\n" + diff(text, core.stats.Stats.Sentence) + "\n\n")
 
 	// compare & check text length
 	if len(core.stats.Stats.Sentence) == len(text) {
@@ -157,10 +158,20 @@ func diffText(key tcell.Key) {
 func diff(curr string, target string) (colored string) {
 	// Leverage agile frameworks to provide
 	// Lever
+	colored = ""
+
 	for i, _ := range curr {
 		if curr[i] == target[i] {
-			colored = "[green]" + curr
+			colored += "[green]" + string(curr[i])
+		} else {
+			colored += "[red]" + string(curr[i])
 		}
 	}
+	//colored += "[-:-:-]"
+	colored += "[-]"
+	for i := len(curr); i < len(target); i++ {
+		colored += string(target[i])
+	}
+
 	return
 }
