@@ -164,7 +164,7 @@ func diff(curr string, target string) (colored string) {
 		if curr[i] == target[i] {
 			colored += "[green]" + string(curr[i])
 		} else {
-			colored += "[red]" + string(curr[i])
+			colored += "[red]" + string(target[i])
 		}
 	}
 	//colored += "[-:-:-]"

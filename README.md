@@ -3,7 +3,8 @@ terminal based typing test using golang
 insipration by [monkeytype](https://monkeytype.com/)
 
 ## Features
-* command line
+* gmk keycap themes
+* accuracy
 * live wpm
 
 ## Installation
@@ -12,7 +13,7 @@ $ go get github.com/ralpioxxcs/gotypes
 ```
 
 ## Dependencies
-* https://github.com/jroimartin/gocui
+* https://github.com/rivo/tview
 
 ## License
-See LICENSE file
+See [LICENSE](LICENSE) file
