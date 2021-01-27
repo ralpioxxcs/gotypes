@@ -12,7 +12,8 @@ type keyboard struct {
 
 // Stats describe general stats (wpm, time, accuracy ..)
 type stats struct {
-	Index     int
+	Entries   int
+	Wrong     int
 	Sentence  string
 	Words     []string
 	StartTime time.Time
@@ -31,7 +32,7 @@ type StatsWidget struct {
 	Timer    *tview.TextView
 	Count    *tview.TextView
 	pic      keyboard
-	Stats    stats
+	Stats    *stats
 }
 
 // ApplyColor set color
@@ -64,15 +65,24 @@ func (t *StatsWidget) IsStarted() bool {
 	return t.start
 }
 
-// GetWpm returns current wpm (word per minutes)
+// GetGrossWpm returns current wpm (word per minutes)
 // * Gross WPM = (All typed entries / 5) / Time (min)
-func (t *StatsWidget) GetWpm() float64 {
-	return float64(t.Stats.Index/5) / time.Since(t.Stats.StartTime).Minutes()
+func (t *StatsWidget) GetGrossWpm() float64 {
+	return float64(t.Stats.Entries/5) / time.Since(t.Stats.StartTime).Minutes()
+}
+
+// GetNetWpm returns current wpm include errors
+// * Net WPM = (All typed entries / 5) - ( Uncorrected Errors / Time (min) )
+func (t *StatsWidget) GetNetWpm() float64 {
+	return t.GetGrossWpm() - (float64(t.Stats.Wrong) / time.Since(t.Stats.StartTime).Minutes())
 }
 
 // GetAccuracy returns current word accuracy
 func (t *StatsWidget) GetAccuracy() int {
-	return 100
+	if t.GetNetWpm() == 0 {
+		return 100
+	}
+	return (int(t.GetNetWpm()) / int(t.GetGrossWpm())) * 100
 }
 
 // GetElapsed returns current time elapsed
@@ -87,7 +97,8 @@ func (t *StatsWidget) GetCount() int {
 
 func NewStats() *stats {
 	s := &stats{
-		Index:    0,
+		Entries:  0,
+		Wrong:    0,
 		Sentence: "",
 		wpm:      0,
 		accuracy: 0,
@@ -105,7 +116,7 @@ func NewStatusWidget() *StatsWidget {
 		Accuracy: tview.NewTextView().SetText("Accuracy : ").SetTextAlign(tview.AlignLeft),
 		Timer:    tview.NewTextView().SetText("Time : ").SetTextAlign(tview.AlignLeft),
 		Count:    tview.NewTextView().SetText("Count : ").SetTextAlign(tview.AlignLeft),
-		Stats:    *NewStats(),
+		Stats:    NewStats(),
 	}
 
 	d.Flex.SetDirection(tview.FlexRow).

@@ -127,10 +127,10 @@ func startTyping(text string) {
 				default:
 					// Update text stats
 					core.QueueUpdateDraw(func() {
-						core.stats.Wpm.SetText(fmt.Sprintf("Wpm : %.0f", core.stats.GetWpm()))
+						core.stats.Wpm.SetText(fmt.Sprintf("Wpm : %.0f", core.stats.GetNetWpm()))
 						core.stats.Accuracy.SetText(fmt.Sprintf("Accuracy : %d", core.stats.GetAccuracy()))
 						core.stats.Timer.SetText(fmt.Sprintf("Time : %.02f sec", core.stats.GetElapsed()))
-						core.stats.Count.SetText(fmt.Sprintf("Count : %d ", core.stats.GetElapsed()))
+						core.stats.Count.SetText(fmt.Sprintf("Count : %d", core.stats.GetCount()))
 					})
 				}
 			}
@@ -138,7 +138,7 @@ func startTyping(text string) {
 	}
 
 	// compare typing word with target word & coloring , underlining
-	core.stats.Stats.Index = len(text)
+	core.stats.Stats.Entries = len(text)
 	core.typing.Text.SetText("\n\n" + diff(text, core.stats.Stats.Sentence) + "\n\n")
 
 	// compare & check text length
