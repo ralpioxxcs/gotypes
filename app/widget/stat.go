@@ -65,8 +65,9 @@ func (t *StatsWidget) IsStarted() bool {
 }
 
 // GetWpm returns current wpm (word per minutes)
+// * Gross WPM = (All typed entries / 5) / Time (min)
 func (t *StatsWidget) GetWpm() float64 {
-	return 1.5
+	return float64(t.Stats.Index/5) / time.Since(t.Stats.StartTime).Minutes()
 }
 
 // GetAccuracy returns current word accuracy
@@ -77,6 +78,11 @@ func (t *StatsWidget) GetAccuracy() int {
 // GetElapsed returns current time elapsed
 func (t *StatsWidget) GetElapsed() float64 {
 	return time.Since(t.Stats.StartTime).Seconds()
+}
+
+// GetCount returns typed sentence count
+func (t *StatsWidget) GetCount() int {
+	return t.Stats.count
 }
 
 func NewStats() *stats {

@@ -117,8 +117,8 @@ func startTyping(text string) {
 		core.stats.Init(core.typing.GetSentence())
 
 		go func() {
-			// set timeout (5 seconds) & update stats each 100 miliseconds tick
-			timeout := time.After(5 * time.Second)
+			// set AFK timeout (60 seconds) & update stats each 100 miliseconds tick
+			timeout := time.After(60 * time.Second)
 			ticker := time.NewTicker(time.Millisecond * 50)
 			for range ticker.C {
 				select {
@@ -130,6 +130,7 @@ func startTyping(text string) {
 						core.stats.Wpm.SetText(fmt.Sprintf("Wpm : %.0f", core.stats.GetWpm()))
 						core.stats.Accuracy.SetText(fmt.Sprintf("Accuracy : %d", core.stats.GetAccuracy()))
 						core.stats.Timer.SetText(fmt.Sprintf("Time : %.02f sec", core.stats.GetElapsed()))
+						core.stats.Count.SetText(fmt.Sprintf("Count : %d ", core.stats.GetElapsed()))
 					})
 				}
 			}
@@ -137,6 +138,7 @@ func startTyping(text string) {
 	}
 
 	// compare typing word with target word & coloring , underlining
+	core.stats.Stats.Index = len(text)
 	core.typing.Text.SetText("\n\n" + diff(text, core.stats.Stats.Sentence) + "\n\n")
 
 	// compare & check text length
@@ -156,11 +158,9 @@ func diffText(key tcell.Key) {
 
 // diff returns colored string which compareed
 func diff(curr string, target string) (colored string) {
-	// Leverage agile frameworks to provide
-	// Lever
 	colored = ""
 
-	for i, _ := range curr {
+	for i := range curr {
 		if curr[i] == target[i] {
 			colored += "[green]" + string(curr[i])
 		} else {
