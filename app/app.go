@@ -150,7 +150,8 @@ func startTyping(text string) {
 				SetText("End").
 				SetBackgroundColor(tcell.ColorDefault).
 				AddButtons([]string{"exit"}).SetDoneFunc(func(index int, label string) {
-			}), false, false).ShowPage("modal")
+			}), false, false)
+		pages.ShowPage("end")
 	}
 
 }

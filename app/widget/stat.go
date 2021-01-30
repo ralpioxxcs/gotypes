@@ -10,11 +10,17 @@ type keyboard struct {
 	temp string
 }
 
+type sentence struct {
+	character rune
+	corrected bool
+}
+
 // Stats describe general stats (wpm, time, accuracy ..)
 type stats struct {
 	Entries   int
 	Wrong     int
 	Sentence  string
+	Sentece_w sentence
 	Words     []string
 	StartTime time.Time
 	wpm       float64
