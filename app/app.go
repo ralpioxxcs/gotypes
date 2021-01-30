@@ -141,8 +141,16 @@ func startTyping(text string) {
 	core.stats.Stats.Entries = len(text)
 	core.typing.Text.SetText("\n\n" + diff(text, core.stats.Stats.Sentence) + "\n\n")
 
+	// check error character
+
 	// compare & check text length
 	if len(core.stats.Stats.Sentence) == len(text) {
+		pages := tview.NewPages().
+			AddPage("modal", tview.NewModal().
+				SetText("End").
+				SetBackgroundColor(tcell.ColorDefault).
+				AddButtons([]string{"exit"}).SetDoneFunc(func(index int, label string) {
+			}), false, false).ShowPage("modal")
 	}
 
 }
@@ -167,7 +175,6 @@ func diff(curr string, target string) (colored string) {
 			colored += "[red]" + string(target[i])
 		}
 	}
-	//colored += "[-:-:-]"
 	colored += "[-]"
 	for i := len(curr); i < len(target); i++ {
 		colored += string(target[i])
