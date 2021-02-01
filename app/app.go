@@ -172,8 +172,13 @@ func diff(curr string, target string) (colored string) {
 	for i := range curr {
 		if curr[i] == target[i] {
 			colored += "[green]" + string(curr[i])
+			core.stats.Stats.Amiwrong[i] = false
 		} else {
 			colored += "[red]" + string(target[i])
+			if core.stats.Stats.Amiwrong[i] == false {
+				core.stats.Stats.Amiwrong[i] = true
+				core.stats.Stats.Wrong++
+			}
 		}
 	}
 	colored += "[-]"

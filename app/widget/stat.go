@@ -10,17 +10,14 @@ type keyboard struct {
 	temp string
 }
 
-type sentence struct {
-	character rune
-	corrected bool
-}
-
 // Stats describe general stats (wpm, time, accuracy ..)
 type stats struct {
-	Entries   int
-	Wrong     int
-	Sentence  string
-	Sentece_w sentence
+	Entries  int // total character count
+	Wrong    int // wrong character count
+	Sentence string
+
+	Amiwrong []bool
+
 	Words     []string
 	StartTime time.Time
 	wpm       float64
@@ -63,6 +60,10 @@ func (t *StatsWidget) Init(sentence string) {
 	// split sentence into words
 	t.Stats.Words = strings.Split(sentence, " ")
 	t.Stats.Sentence = sentence
+	t.Stats.Amiwrong = make([]bool, len(sentence))
+	for i := range sentence {
+		t.Stats.Amiwrong[i] = false
+	}
 	t.start = true
 }
 
@@ -85,10 +86,11 @@ func (t *StatsWidget) GetNetWpm() float64 {
 
 // GetAccuracy returns current word accuracy
 func (t *StatsWidget) GetAccuracy() int {
-	if t.GetNetWpm() == 0 {
-		return 100
-	}
-	return (int(t.GetNetWpm()) / int(t.GetGrossWpm())) * 100
+	//if t.GetNetWpm() == 0 {
+	//  return 100
+	//}
+	//return (int(t.GetNetWpm()) / int(t.GetGrossWpm())) * 100
+	return ((t.Stats.Entries - t.Stats.Wrong) / t.Stats.Entries) * 100
 }
 
 // GetElapsed returns current time elapsed
