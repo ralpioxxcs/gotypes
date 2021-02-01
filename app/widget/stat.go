@@ -6,40 +6,39 @@ import (
 	"time"
 )
 
+//
 type keyboard struct {
 	temp string
 }
 
-// Stats describe general stats (wpm, time, accuracy ..)
-type stats struct {
-	Entries  int // total character count
-	Wrong    int // wrong character count
-	Sentence string
-
-	Amiwrong []bool
-
-	Words     []string
-	StartTime time.Time
-	wpm       float64
-	accuracy  int
-	count     int
+// Status describe general Status (wpm, time, accuracy ..)
+type Status struct {
+	Entries   int       // total character count
+	Sentence  string    // whole sentence
+	Wrong     int       // wrong character count
+	Amiwrong  []bool    // if each character is typed wronly for calculate accuracy
+	Words     []string  // store each words string array splitted by sentence string
+	StartTime time.Time // start time
+	wpm       float64   // words per minute value for display
+	accuracy  int       // typing accuracy for display
+	count     int       // total typing sentence count
 }
 
-// StatsWidget is frame which display general typing information ( wpm, time ,,)
+// StatusWidget is frame which display general typing information ( wpm, time ,,)
 // it include tview.TextView struct
-type StatsWidget struct {
+type StatusWidget struct {
 	*tview.Flex
-	start    bool
 	Wpm      *tview.TextView
 	Accuracy *tview.TextView
 	Timer    *tview.TextView
 	Count    *tview.TextView
+	Status   *Status
+	start    bool
 	pic      keyboard
-	Stats    *stats
 }
 
 // ApplyColor set color
-func (t *StatsWidget) ApplyColor(p palette) {
+func (t *StatusWidget) ApplyColor(p palette) {
 	t.SetBackgroundColor(p.background)
 	t.Wpm.SetBackgroundColor(p.background)
 	t.Accuracy.SetBackgroundColor(p.background)
@@ -49,62 +48,61 @@ func (t *StatsWidget) ApplyColor(p palette) {
 	t.SetBorderColor(p.border)
 }
 
-// Init initialize stats if timer is set already just return
-func (t *StatsWidget) Init(sentence string) {
-	if t.Stats.StartTime.IsZero() {
-		t.Stats.StartTime = time.Now()
+// Init initialize Status if timer is set already just return
+func (t *StatusWidget) Init(sentence string) {
+	if t.Status.StartTime.IsZero() {
+		t.Status.StartTime = time.Now()
 	} else {
 		return
 	}
 
 	// split sentence into words
-	t.Stats.Words = strings.Split(sentence, " ")
-	t.Stats.Sentence = sentence
-	t.Stats.Amiwrong = make([]bool, len(sentence))
+	t.Status.Words = strings.Split(sentence, " ")
+	t.Status.Sentence = sentence
+	t.Status.Amiwrong = make([]bool, len(sentence))
 	for i := range sentence {
-		t.Stats.Amiwrong[i] = false
+		t.Status.Amiwrong[i] = false
 	}
 	t.start = true
 }
 
 // IsStarted returns typing is started
-func (t *StatsWidget) IsStarted() bool {
+func (t *StatusWidget) IsStarted() bool {
 	return t.start
 }
 
 // GetGrossWpm returns current wpm (word per minutes)
 // * Gross WPM = (All typed entries / 5) / Time (min)
-func (t *StatsWidget) GetGrossWpm() float64 {
-	return float64(t.Stats.Entries/5) / time.Since(t.Stats.StartTime).Minutes()
+func (t *StatusWidget) GetGrossWpm() float64 {
+	return float64(t.Status.Entries/5) / time.Since(t.Status.StartTime).Minutes()
 }
 
 // GetNetWpm returns current wpm include errors
 // * Net WPM = (All typed entries / 5) - ( Uncorrected Errors / Time (min) )
-func (t *StatsWidget) GetNetWpm() float64 {
-	return t.GetGrossWpm() - (float64(t.Stats.Wrong) / time.Since(t.Stats.StartTime).Minutes())
+func (t *StatusWidget) GetNetWpm() float64 {
+	return t.GetGrossWpm() - (float64(t.Status.Wrong) / time.Since(t.Status.StartTime).Minutes())
 }
 
 // GetAccuracy returns current word accuracy
-func (t *StatsWidget) GetAccuracy() int {
+func (t *StatusWidget) GetAccuracy() int {
 	//if t.GetNetWpm() == 0 {
 	//  return 100
 	//}
-	//return (int(t.GetNetWpm()) / int(t.GetGrossWpm())) * 100
-	return ((t.Stats.Entries - t.Stats.Wrong) / t.Stats.Entries) * 100
+	return ((t.Status.Entries - t.Status.Wrong) / t.Status.Entries) * 100
 }
 
 // GetElapsed returns current time elapsed
-func (t *StatsWidget) GetElapsed() float64 {
-	return time.Since(t.Stats.StartTime).Seconds()
+func (t *StatusWidget) GetElapsed() float64 {
+	return time.Since(t.Status.StartTime).Seconds()
 }
 
 // GetCount returns typed sentence count
-func (t *StatsWidget) GetCount() int {
-	return t.Stats.count
+func (t *StatusWidget) GetCount() int {
+	return t.Status.count
 }
 
-func NewStats() *stats {
-	s := &stats{
+func NewStatus() *Status {
+	s := &Status{
 		Entries:  0,
 		Wrong:    0,
 		Sentence: "",
@@ -115,16 +113,16 @@ func NewStats() *stats {
 	return s
 }
 
-// NewStatusWidget returns initialized StatsWidget
-func NewStatusWidget() *StatsWidget {
-	d := &StatsWidget{
+// NewStatusWidget returns initialized StatusWidget
+func NewStatusWidget() *StatusWidget {
+	d := &StatusWidget{
 		start:    false,
 		Flex:     tview.NewFlex(),
 		Wpm:      tview.NewTextView().SetText("Wpm : ").SetTextAlign(tview.AlignLeft),
 		Accuracy: tview.NewTextView().SetText("Accuracy : ").SetTextAlign(tview.AlignLeft),
 		Timer:    tview.NewTextView().SetText("Time : ").SetTextAlign(tview.AlignLeft),
 		Count:    tview.NewTextView().SetText("Count : ").SetTextAlign(tview.AlignLeft),
-		Stats:    NewStats(),
+		Status:   NewStatus(),
 	}
 
 	d.Flex.SetDirection(tview.FlexRow).
@@ -134,7 +132,7 @@ func NewStatusWidget() *StatsWidget {
 		AddItem(d.Count, 0, 1, false)
 
 	d.SetBorder(true)
-	d.SetTitle("Stats")
+	d.SetTitle("Status")
 
 	return d
 }

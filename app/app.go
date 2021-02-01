@@ -11,17 +11,17 @@ import (
 )
 
 /* App is entire tui struct including tview flex struct
- * it consists of each widgets (sidebar, body, status)
- * - sidebar : it lists color themes
+ * it consists of each widgets (sidebarWidget, body, StatsuWidget)
+ * - sidebarWidget : it lists color themes
  * - body    : display words and current carrot interactively
- * - stats   : it shows current status such as wpm, time ..
+ * - StatsuWidget   : it shows current status such as wpm, time ..
  */
 type App struct {
 	*tview.Application
-	flex    *tview.Flex
-	sidebar *widget.ThemeList
-	typing  *widget.TypingWidget
-	stats   *widget.StatsWidget
+	flex          *tview.Flex
+	sidebarWidget *widget.ThemeList
+	typingWidget  *widget.TypingWidget
+	statusWidget  *widget.StatusWidget
 }
 
 func (a *App) Draw(screen tcell.Screen) {
@@ -55,41 +55,41 @@ func (a *App) menuAction(action widget.MenuAction) {
 	switch action {
 	case widget.MenuActionNone:
 	case widget.MenuActionImportTheme:
-		a.sidebar.ApplyColor(a.sidebar.Theme[a.sidebar.GetCurrentTheme()])
-		a.typing.ApplyColor(a.sidebar.Theme[a.sidebar.GetCurrentTheme()])
-		a.stats.ApplyColor(a.sidebar.Theme[a.sidebar.GetCurrentTheme()])
+		a.sidebarWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
+		a.typingWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
+		a.statusWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
 	}
 }
 
 // NewApp returns initialized App struct
 func NewApp() *App {
 	a := &App{
-		Application: tview.NewApplication(),
-		flex:        tview.NewFlex(),
-		sidebar:     widget.NewThemeList(),
-		typing:      widget.NewTypingWidget(),
-		stats:       widget.NewStatusWidget(),
+		Application:   tview.NewApplication(),
+		flex:          tview.NewFlex(),
+		sidebarWidget: widget.NewThemeList(),
+		typingWidget:  widget.NewTypingWidget(),
+		statusWidget:  widget.NewStatusWidget(),
 	}
 
-	// set function to sidebar
-	a.sidebar.SetActionFunc(a.menuAction)
+	// set function to sidebarWidget
+	a.sidebarWidget.SetActionFunc(a.menuAction)
 
-	// typing
-	a.typing.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+	// typingWidget
+	a.typingWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key != nil {
-			a.SetFocus(a.typing.Input)
+			a.SetFocus(a.typingWidget.Input)
 		}
 		return event
 	})
-	a.typing.Input.SetChangedFunc(startTyping)
-	//a.typing.Input.SetDoneFunc(diffText)
-	//a.typing.Input.SetFinishedFunc(finishtype)
+	a.typingWidget.Input.SetChangedFunc(startTyping)
+	//a.typingWidget.Input.SetDoneFunc(diffText)
+	//a.typingWidget.Input.SetFinishedFunc(finishtype)
 
-	// set typing frame
-	a.flex.AddItem(a.sidebar, 0, 1, false).
+	// set typingWidget frame
+	a.flex.AddItem(a.sidebarWidget, 0, 1, false).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(a.typing, 0, 8, true).
-			AddItem(a.stats, 0, 1, false), 0, 9, true)
+			AddItem(a.typingWidget, 0, 8, true).
+			AddItem(a.statusWidget, 0, 1, false), 0, 9, true)
 	a.menuAction(widget.MenuActionImportTheme)
 
 	a.SetRoot(a.flex, true)
@@ -113,11 +113,11 @@ func startTyping(text string) {
 	*
 	 */
 
-	if !core.stats.IsStarted() {
-		core.stats.Init(core.typing.GetSentence())
+	if !core.statusWidget.IsStarted() {
+		core.statusWidget.Init(core.typingWidget.GetSentence())
 
 		go func() {
-			// set AFK timeout (60 seconds) & update stats each 100 miliseconds tick
+			// set AFK timeout (60 seconds) & update statusWidget each 100 miliseconds tick
 			timeout := time.After(60 * time.Second)
 			ticker := time.NewTicker(time.Millisecond * 50)
 			for range ticker.C {
@@ -125,26 +125,26 @@ func startTyping(text string) {
 				case <-timeout:
 					return
 				default:
-					// Update text stats
+					// Update text statusWidget
 					core.QueueUpdateDraw(func() {
-						core.stats.Wpm.SetText(fmt.Sprintf("Wpm : %.0f", core.stats.GetNetWpm()))
-						core.stats.Accuracy.SetText(fmt.Sprintf("Accuracy : %d", core.stats.GetAccuracy()))
-						core.stats.Timer.SetText(fmt.Sprintf("Time : %.02f sec", core.stats.GetElapsed()))
-						core.stats.Count.SetText(fmt.Sprintf("Count : %d", core.stats.GetCount()))
+						core.statusWidget.Wpm.SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetNetWpm()))
+						core.statusWidget.Accuracy.SetText(fmt.Sprintf("Accuracy : %d", core.statusWidget.GetAccuracy()))
+						core.statusWidget.Timer.SetText(fmt.Sprintf("Time : %.02f sec", core.statusWidget.GetElapsed()))
+						core.statusWidget.Count.SetText(fmt.Sprintf("Count : %d", core.statusWidget.GetCount()))
 					})
 				}
 			}
 		}()
 	}
 
-	// compare typing word with target word & coloring , underlining
-	core.stats.Stats.Entries = len(text)
-	core.typing.Text.SetText("\n\n" + diff(text, core.stats.Stats.Sentence) + "\n\n")
+	// compare typingWidget word with target word & coloring , underlining
+	core.statusWidget.Status.Entries = len(text)
+	core.typingWidget.Text.SetText("\n\n" + diff(text, core.statusWidget.Status.Sentence) + "\n\n")
 
 	// check error character
 
 	// compare & check text length
-	if len(core.stats.Stats.Sentence) == len(text) {
+	if len(core.statusWidget.Status.Sentence) == len(text) {
 		pages := tview.NewPages().
 			AddPage("modal", tview.NewModal().
 				SetText("End").
@@ -172,12 +172,12 @@ func diff(curr string, target string) (colored string) {
 	for i := range curr {
 		if curr[i] == target[i] {
 			colored += "[green]" + string(curr[i])
-			core.stats.Stats.Amiwrong[i] = false
+			core.statusWidget.Status.Amiwrong[i] = false
 		} else {
 			colored += "[red]" + string(target[i])
-			if core.stats.Stats.Amiwrong[i] == false {
-				core.stats.Stats.Amiwrong[i] = true
-				core.stats.Stats.Wrong++
+			if core.statusWidget.Status.Amiwrong[i] == false {
+				core.statusWidget.Status.Amiwrong[i] = true
+				core.statusWidget.Status.Wrong++
 			}
 		}
 	}
