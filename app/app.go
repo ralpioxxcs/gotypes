@@ -95,6 +95,17 @@ func NewApp() *App {
 	a.SetRoot(a.flex, true)
 	a.EnableMouse(true)
 
+	popup = tview.NewModal().
+		SetText("Do you want replay?").
+		AddButtons([]string{"Yes", "Cancel"}).
+		SetBackgroundColor(tcell.ColorDefault).
+		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+			if buttonLabel == "Yes" {
+				a.Stop()
+			} else {
+			}
+		})
+
 	core = a
 
 	return a
@@ -102,6 +113,7 @@ func NewApp() *App {
 
 // App instance handler
 var core *App
+var popup *tview.Modal
 
 // startTyping process typing functions
 // * text : current text
@@ -110,7 +122,6 @@ func startTyping(text string) {
 	/*
 	* store start time & elapsed
 	* compare current words with indicating words
-	*
 	 */
 
 	if !core.statusWidget.IsStarted() {
@@ -141,19 +152,10 @@ func startTyping(text string) {
 	core.statusWidget.Status.Entries = len(text)
 	core.typingWidget.Text.SetText("\n\n" + diff(text, core.statusWidget.Status.Sentence) + "\n\n")
 
-	// check error character
-
 	// compare & check text length
 	if len(core.statusWidget.Status.Sentence) == len(text) {
-		pages := tview.NewPages().
-			AddPage("modal", tview.NewModal().
-				SetText("End").
-				SetBackgroundColor(tcell.ColorDefault).
-				AddButtons([]string{"exit"}).SetDoneFunc(func(index int, label string) {
-			}), false, false)
-		pages.ShowPage("end")
+		core.SetRoot(popup, false).SetFocus(popup).Run()
 	}
-
 }
 
 // diffText handles each event keys
@@ -172,12 +174,12 @@ func diff(curr string, target string) (colored string) {
 	for i := range curr {
 		if curr[i] == target[i] {
 			colored += "[green]" + string(curr[i])
-			core.statusWidget.Status.Amiwrong[i] = false
+			core.statusWidget.Status.AmiWrong[i] = false
 		} else {
 			colored += "[red]" + string(target[i])
-			if core.statusWidget.Status.Amiwrong[i] == false {
-				core.statusWidget.Status.Amiwrong[i] = true
-				core.statusWidget.Status.Wrong++
+			if core.statusWidget.Status.AmiWrong[i] == false {
+				core.statusWidget.Status.AmiWrong[i] = true
+				core.statusWidget.Status.WrongCount++
 			}
 		}
 	}
