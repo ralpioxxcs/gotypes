@@ -1,4 +1,4 @@
-# gotypes [![Actions Status: build](https://github.com/ralpioxxcs/gotypes/workflows/Go/badge.svg)](https://github.com/ralpioxxcs/gotypes/actions?query=workflow%3A"Go")
+# gotypes [![Actions Status: build](https://github.com/ralpioxxcs/gotypes/workflows/build/badge.svg)](https://github.com/ralpioxxcs/gotypes/actions?query=workflow%3A"build")
 terminal based typing test using golang
 insipration by [monkeytype](https://monkeytype.com/)
 
