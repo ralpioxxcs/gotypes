@@ -88,7 +88,7 @@ func NewApp() *App {
 	a.typingWidget.Input.SetChangedFunc(startTyping)
 	a.typingWidget.Input.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyBackspace {
-			a.statusWidget.Status.AmiWrong[a.statusWidget.Status.Entries] = false
+			a.statusWidget.Status.AmiWrong[a.statusWidget.Status.Entries+1] = false
 		}
 		if key == tcell.KeyTab {
 			a.Reset()
@@ -149,7 +149,7 @@ func startTyping(text string) {
 					// Update text statusWidget
 					core.QueueUpdateDraw(func() {
 						core.statusWidget.Wpm.SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetNetWpm()))
-						core.statusWidget.Accuracy.SetText(fmt.Sprintf("Accuracy : %d", core.statusWidget.GetAccuracy()))
+						core.statusWidget.Accuracy.SetText(fmt.Sprintf("Accuracy : %.0f", core.statusWidget.GetAccuracy()))
 						core.statusWidget.Timer.SetText(fmt.Sprintf("Time : %.02f sec", core.statusWidget.GetElapsed()))
 						core.statusWidget.Count.SetText(fmt.Sprintf("Count : %d", core.statusWidget.GetCount()))
 					})

@@ -84,13 +84,13 @@ func (t *StatusWidget) GetNetWpm() float64 {
 }
 
 // GetAccuracy returns current word accuracy
-func (t *StatusWidget) GetAccuracy() int {
+func (t *StatusWidget) GetAccuracy() float64 {
 	if t.Status.Entries == 0 {
 		return 0
 	} else if t.Status.WrongCount == 0 {
 		return 100
 	}
-	return ((t.Status.Entries - t.Status.WrongCount) / t.Status.Entries) * 100
+	return float64(float64(t.Status.Entries-t.Status.WrongCount)/float64(t.Status.Entries)) * 100
 }
 
 // GetElapsed returns current time elapsed
