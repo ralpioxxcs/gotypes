@@ -61,6 +61,10 @@ func (a *App) menuAction(action widget.MenuAction) {
 	}
 }
 
+// Reset state
+func (a *App) Reset() {
+}
+
 // NewApp returns initialized App struct
 func NewApp() *App {
 	a := &App{
@@ -74,7 +78,7 @@ func NewApp() *App {
 	// set function to sidebarWidget
 	a.sidebarWidget.SetActionFunc(a.menuAction)
 
-	// typingWidget
+	// config callback functions of typingWidget
 	a.typingWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key != nil {
 			a.SetFocus(a.typingWidget.Input)
@@ -82,8 +86,14 @@ func NewApp() *App {
 		return event
 	})
 	a.typingWidget.Input.SetChangedFunc(startTyping)
-	//a.typingWidget.Input.SetDoneFunc(diffText)
-	//a.typingWidget.Input.SetFinishedFunc(finishtype)
+	a.typingWidget.Input.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyBackspace {
+			a.statusWidget.Status.AmiWrong[a.statusWidget.Status.Entries] = false
+		}
+		if key == tcell.KeyTab {
+			a.Reset()
+		}
+	})
 
 	// set typingWidget frame
 	a.flex.AddItem(a.sidebarWidget, 0, 1, false).
