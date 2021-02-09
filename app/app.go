@@ -174,6 +174,9 @@ func diff(curr string, target string) (colored string) {
 	for i := range curr {
 		if curr[i] == target[i] {
 			colored += "[green]" + string(curr[i])
+			if core.statusWidget.Status.AmiWrong[i] == true {
+				core.statusWidget.Status.WrongCount--
+			}
 			core.statusWidget.Status.AmiWrong[i] = false
 		} else {
 			colored += "[red]" + string(target[i])

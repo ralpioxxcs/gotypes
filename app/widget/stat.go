@@ -85,9 +85,11 @@ func (t *StatusWidget) GetNetWpm() float64 {
 
 // GetAccuracy returns current word accuracy
 func (t *StatusWidget) GetAccuracy() int {
-	//if t.GetNetWpm() == 0 {
-	//  return 100
-	//}
+	if t.Status.Entries == 0 {
+		return 0
+	} else if t.Status.WrongCount == 0 {
+		return 100
+	}
 	return ((t.Status.Entries - t.Status.WrongCount) / t.Status.Entries) * 100
 }
 
@@ -133,6 +135,5 @@ func NewStatusWidget() *StatusWidget {
 
 	d.SetBorder(true)
 	d.SetTitle("Status")
-
 	return d
 }

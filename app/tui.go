@@ -22,5 +22,4 @@ func Run() {
 	if err := a.Run(); err != nil {
 		panic(err)
 	}
-
 }
