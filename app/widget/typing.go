@@ -1,14 +1,11 @@
 package widget
 
 import (
+	"bufio"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"os"
 	"strings"
-)
-
-const (
-	corporate = `Leverage agile frameworks to provide a robust synopsis for high level overviews`
-	wise      = `A bad workman always blames his tools`
 )
 
 // TypingBox is a box which display words be typed
@@ -70,7 +67,17 @@ func NewTypingWidget() *TypingWidget {
 		AddItem(t.Text, 0, 10, false).
 		AddItem(t.Input, 0, 1, true)
 
-	t.sentence = append(t.sentence, corporate)
+	// read sentences from file
+	file, err := os.Open("data/wise-saying.txt")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		t.sentence = append(t.sentence, scanner.Text())
+	}
 
 	t.SetTitle("TypingWidget")
 	t.Text.SetText("\n\n" + t.sentence[t.count] + "\n\n")
