@@ -164,12 +164,11 @@ func startTyping(text string) {
 	core.typingWidget.Text.SetText("\n\n" + diff(text, core.statusWidget.Status.Sentence) + "\n\n")
 
 	// compare & check text length
-	if len(core.statusWidget.Status.Sentence) == len(text) {
-		fmt.Println("test!!!!!!!!!!!!!!!!!")
+	if (len(core.statusWidget.Status.Sentence) - 2) == len(text) {
 		// set next sentence
 		core.typingWidget.SetNextSentence()
 		core.statusWidget.Init(core.typingWidget.GetSentence())
-
+		core.typingWidget.ClearInputBox()
 		//core.SetRoot(popup, false).SetFocus(popup).Run()
 	}
 }

@@ -2,7 +2,7 @@ package widget
 
 import (
 	"bufio"
-	"fmt"
+	_ "fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	_ "io/ioutil"
@@ -38,6 +38,10 @@ func (t *TypingWidget) ApplyColor(p palette) {
 func (t *TypingWidget) SetNextSentence() {
 	t.count += 1
 	t.Text.SetText("\n\n" + t.sentence[t.count] + "\n\n")
+}
+
+func (t *TypingWidget) ClearInputBox() {
+	t.Input.SetText("")
 }
 
 // GetSentence returns string of current typing senctence in box
