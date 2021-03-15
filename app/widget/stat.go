@@ -52,8 +52,6 @@ func (t *StatusWidget) ApplyColor(p palette) {
 func (t *StatusWidget) Init(sentence string) {
 	if t.Status.StartTime.IsZero() {
 		t.Status.StartTime = time.Now()
-	} else {
-		return
 	}
 
 	// split sentence into words

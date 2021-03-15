@@ -84,7 +84,6 @@ func NewTypingWidget() *TypingWidget {
 	var lines []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
 		lines = append(lines, scanner.Text())
 	}
 	t.sentence = make([]string, len(lines), 100)
