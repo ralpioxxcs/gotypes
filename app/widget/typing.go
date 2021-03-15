@@ -2,8 +2,10 @@ package widget
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	_ "io/ioutil"
 	"os"
 	"strings"
 )
@@ -31,6 +33,11 @@ func (t *TypingWidget) ApplyColor(p palette) {
 	t.Input.SetFieldBackgroundColor(p.border)
 	t.Input.SetBorderColor(p.border)
 
+}
+
+func (t *TypingWidget) SetNextSentence() {
+	t.count += 1
+	t.Text.SetText("\n\n" + t.sentence[t.count] + "\n\n")
 }
 
 // GetSentence returns string of current typing senctence in box
@@ -74,10 +81,14 @@ func NewTypingWidget() *TypingWidget {
 	}
 	defer file.Close()
 
+	var lines []string
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		t.sentence = append(t.sentence, scanner.Text())
+		fmt.Println(scanner.Text())
+		lines = append(lines, scanner.Text())
 	}
+	t.sentence = make([]string, len(lines), 100)
+	copy(t.sentence, lines)
 
 	t.SetTitle("TypingWidget")
 	t.Text.SetText("\n\n" + t.sentence[t.count] + "\n\n")

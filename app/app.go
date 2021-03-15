@@ -16,6 +16,7 @@ import (
  * - body    : display words and current carrot interactively
  * - StatsuWidget   : it shows current status such as wpm, time ..
  */
+
 type App struct {
 	*tview.Application
 	flex          *tview.Flex
@@ -164,7 +165,9 @@ func startTyping(text string) {
 
 	// compare & check text length
 	if len(core.statusWidget.Status.Sentence) == len(text) {
-		core.SetRoot(popup, false).SetFocus(popup).Run()
+		core.typingWidget.SetNextSentence()
+		// next sentence
+		//core.SetRoot(popup, false).SetFocus(popup).Run()
 	}
 }
 
