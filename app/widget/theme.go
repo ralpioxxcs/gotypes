@@ -3,6 +3,7 @@ package widget
 import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+	"sort"
 )
 
 type MenuAction int
@@ -28,8 +29,14 @@ func NewThemeList() *ThemeList {
 	l.SetBorder(true)
 	l.SetTitle("Themes")
 
-	for key, _ := range l.Theme {
-		l.AddItem(key, "", 0, l.doApply)
+	// sorting by string
+	keys := make([]string, 0, len(l.Theme))
+	for k := range l.Theme {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		l.AddItem(k, "", 0, l.doApply)
 	}
 
 	return l
