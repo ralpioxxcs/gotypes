@@ -24,6 +24,10 @@ type Status struct {
 	count      int       // total typing sentence count
 }
 
+func (t *Status) AddCount() {
+	t.count += 1
+}
+
 // StatusWidget is frame which display general typing information ( wpm, time ,,)
 // it include tview.TextView struct
 type StatusWidget struct {
