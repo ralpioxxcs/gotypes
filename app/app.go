@@ -23,6 +23,7 @@ type App struct {
 	sidebarWidget *widget.ThemeList
 	typingWidget  *widget.TypingWidget
 	statusWidget  *widget.StatusWidget
+	configWidget  *widget.ConfigWidget
 }
 
 func (a *App) Draw(screen tcell.Screen) {
@@ -61,6 +62,7 @@ func (a *App) menuAction(action widget.MenuAction) {
 		a.sidebarWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
 		a.typingWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
 		a.statusWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
+		a.configWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
 	}
 }
 
@@ -77,6 +79,7 @@ func NewApp() *App {
 		sidebarWidget: widget.NewThemeList(),
 		typingWidget:  widget.NewTypingWidget(),
 		statusWidget:  widget.NewStatusWidget(),
+		configWidget:  widget.NewConfigWidget(),
 	}
 
 	// set function to side-bar widget
@@ -105,8 +108,9 @@ func NewApp() *App {
 	// set app layout
 	a.flex.AddItem(a.sidebarWidget, 0, 1, false).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(a.typingWidget, 0, 2, true).
-			AddItem(a.statusWidget, 0, 1, false), 0, 10, true)
+			AddItem(a.typingWidget, 0, 5, true).
+			AddItem(a.statusWidget, 6, 0, false).
+			AddItem(a.configWidget, 6, 0, false), 0, 10, true)
 	a.menuAction(widget.MenuActionImportTheme)
 
 	a.SetRoot(a.flex, true)
