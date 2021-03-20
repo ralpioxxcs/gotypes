@@ -2,7 +2,7 @@ package widget
 
 import (
 	"github.com/rivo/tview"
-	"strings"
+	_ "strings"
 	"time"
 )
 
@@ -14,10 +14,9 @@ type keyboard struct {
 // Status describe general Status (wpm, time, accuracy ..)
 type Status struct {
 	Entries    int       // total character count
-	Sentence   string    // whole sentence
 	WrongCount int       // wrong character count
 	AmiWrong   []bool    // if each character is typed wronly for calculate accuracy
-	Words      []string  // store each words string array splitted by sentence string
+	Words      []string  // store each words
 	StartTime  time.Time // start time
 	wpm        float64   // words per minute value for display
 	accuracy   int       // typing accuracy for display
@@ -26,6 +25,10 @@ type Status struct {
 
 func (t *Status) AddCount() {
 	t.count += 1
+}
+
+func (t *Status) GetCurrentWord() string {
+	return t.Words[t.count]
 }
 
 // StatusWidget is frame which display general typing information ( wpm, time ,,)
@@ -52,20 +55,16 @@ func (t *StatusWidget) ApplyColor(p palette) {
 	t.SetBorderColor(p.border)
 }
 
-// Init initialize Status if timer is set already just return
-func (t *StatusWidget) Init(sentence string) {
-	if t.Status.StartTime.IsZero() {
-		t.Status.StartTime = time.Now()
+func (w *StatusWidget) Init(words []string) {
+	if w.Status.StartTime.IsZero() {
+		w.Status.StartTime = time.Now()
 	}
-
-	// split sentence into words
-	t.Status.Words = strings.Split(sentence, " ")
-	t.Status.Sentence = sentence
-	t.Status.AmiWrong = make([]bool, len(sentence))
-	for i := range sentence {
-		t.Status.AmiWrong[i] = false
+	w.Status.Words = words
+	w.Status.AmiWrong = make([]bool, len(words))
+	for i := range words {
+		w.Status.AmiWrong[i] = false
 	}
-	t.start = true
+	w.start = true
 }
 
 // IsStarted returns typing is started
@@ -109,7 +108,6 @@ func NewStatus() *Status {
 	s := &Status{
 		Entries:    0,
 		WrongCount: 0,
-		Sentence:   "",
 		wpm:        0,
 		accuracy:   0,
 		count:      0,

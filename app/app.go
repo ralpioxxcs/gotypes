@@ -146,7 +146,7 @@ func startTyping(text string) {
 	* compare current words with indicating words
 	 */
 	if !core.statusWidget.IsStarted() {
-		core.statusWidget.Init(core.typingWidget.GetSentence())
+		core.statusWidget.Init(core.typingWidget.Words.English)
 
 		go func() {
 			// set AFK timeout (60 seconds) & update status widget each 100 miliseconds tick
@@ -172,21 +172,16 @@ func startTyping(text string) {
 			}
 		}()
 	}
-
 	// compare typingWidget word with target word & coloring , underlining
 	core.statusWidget.Status.Entries = len(text)
-	core.typingWidget.Text.
-		SetText("\n\n" + diff(text, core.statusWidget.Status.Sentence) + "\n\n")
+	core.typingWidget.Update(
+		diff(text, core.statusWidget.Status.GetCurrentWord()), core.statusWidget.GetCount())
 
-	// compare & check text length
-	if (len(core.statusWidget.Status.Sentence)) == len(text) {
+	// check to pass next word
+	if (len(core.statusWidget.Status.GetCurrentWord())) == len(text) {
 		core.statusWidget.Status.AddCount()
-		//core.SetRoot(popup, false).SetFocus(popup).Run()
-
-		// set next sentence
-		core.typingWidget.SetNextSentence()
-		core.statusWidget.Init(core.typingWidget.GetSentence())
 		core.typingWidget.ClearInputBox()
+		//core.SetRoot(popup, false).SetFocus(popup).Run()
 	}
 }
 

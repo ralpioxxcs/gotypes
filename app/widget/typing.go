@@ -1,7 +1,6 @@
 package widget
 
 import (
-	_ "bufio"
 	"encoding/json"
 	_ "fmt"
 	"github.com/gdamore/tcell/v2"
@@ -11,7 +10,7 @@ import (
 	_ "strings"
 )
 
-type Words struct {
+type word struct {
 	English     []string `json:"english"`
 	Korean      []string `json:"korean"`
 	English1000 []string `json:"english1000"`
@@ -21,12 +20,10 @@ type Words struct {
 // it include tview TextView , InputField struct
 type TypingWidget struct {
 	*tview.Flex
-	Text     *tview.TextView
-	Input    *tview.InputField
-	Word     Words
-	words    []string
-	sentence []string
-	count    int
+	Text  *tview.TextView
+	Input *tview.InputField
+	Words word
+	count int
 }
 
 func (t *TypingWidget) ApplyColor(p palette) {
@@ -40,26 +37,22 @@ func (t *TypingWidget) ApplyColor(p palette) {
 	t.Input.SetFieldTextColor(p.foreground)
 	t.Input.SetFieldBackgroundColor(p.border)
 	t.Input.SetBorderColor(p.border)
-
 }
 
-func (t *TypingWidget) SetNextSentence() {
-	t.count += 1
-	t.Text.SetText("\n\n" + t.sentence[t.count] + "\n\n")
+func (w *TypingWidget) Update(colored string, index int) {
+	var wordlines string
+
+	wordlines += colored
+	const num = 20
+	for i := index + 1; i < num; i++ {
+		wordlines = wordlines + " " + w.Words.English[i]
+	}
+	w.Text.SetText(wordlines)
+	w.Text.SetTextAlign(tview.AlignCenter)
 }
 
 func (t *TypingWidget) ClearInputBox() {
 	t.Input.SetText("")
-}
-
-// GetSentence returns string of current typing senctence in box
-func (t *TypingWidget) GetSentence() string {
-	return t.sentence[t.count]
-}
-
-// GetWords returns slice of words
-func (t *TypingWidget) GetWords() []string {
-	return t.words
 }
 
 func NewTypingWidget() *TypingWidget {
@@ -86,6 +79,7 @@ func NewTypingWidget() *TypingWidget {
 		AddItem(t.Text, 10, 0, false).
 		AddItem(t.Input, 3, 0, true)
 
+	// load & display words
 	jsonFile, err := os.Open("data/test.json")
 	if err != nil {
 		panic(err)
@@ -93,35 +87,14 @@ func NewTypingWidget() *TypingWidget {
 	defer jsonFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-	json.Unmarshal(byteValue, &t.Word)
-
-	//// read sentences from file
-	//file, err := os.Open("data/wise-saying.txt")
-	//if err != nil {
-	//  panic(err)
-	//}
-	//defer file.Close()
-
-	//var lines []string
-	//scanner := bufio.NewScanner(file)
-	//for scanner.Scan() {
-	//  lines = append(lines, scanner.Text())
-	//}
-	//t.sentence = make([]string, len(lines), 100)
-	//copy(t.sentence, lines)
-
-	t.SetTitle("TypingWidget")
+	json.Unmarshal(byteValue, &t.Words)
 
 	var wordlines string
 	const num = 20
 	for i := 0; i < num; i++ {
-		wordlines = wordlines + " " + t.Word.English[i]
+		wordlines = wordlines + " " + t.Words.English[i]
 	}
-	//for _, v := range t.Word.English {
-	//  wordlines = wordlines + "  " + v
-	//}
 	t.Text.SetText(wordlines)
-	//t.Text.SetText("\n\n" + t.sentence[t.count] + "\n\n")
 	t.Text.SetTextAlign(tview.AlignCenter)
 
 	return t
