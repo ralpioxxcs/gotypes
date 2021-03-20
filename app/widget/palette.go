@@ -43,6 +43,10 @@ type palette struct {
 	extra      tcell.Color
 }
 
+func (p *palette) GetBg() tcell.Color {
+	return p.background
+}
+
 // Dark returns default colour code
 func Dark() palette {
 	return palette{

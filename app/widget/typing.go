@@ -83,8 +83,8 @@ func NewTypingWidget() *TypingWidget {
 	t.Input.SetBorder(true)
 
 	t.SetDirection(tview.FlexRow).
-		AddItem(t.Text, 0, 10, false).
-		AddItem(t.Input, 0, 1, true)
+		AddItem(t.Text, 10, 0, false).
+		AddItem(t.Input, 3, 0, true)
 
 	jsonFile, err := os.Open("data/test.json")
 	if err != nil {

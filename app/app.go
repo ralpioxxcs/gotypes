@@ -10,13 +10,13 @@ import (
 	"github.com/rivo/tview"
 )
 
-/* App is entire tui struct including tview flex struct
- * it consists of each widgets (sidebarWidget, body, StatsuWidget)
- * - sidebarWidget : it lists color themes
- * - body    : display words and current carrot interactively
- * - StatsuWidget   : it shows current status such as wpm, time ..
+/*
+ * App is entire tui struct including tview flex struct
+ * it consists of each widgets (side-bar, body, status)
+ * - side-bar : it lists color themes
+ * - body : display words and current carrot interactively
+ * - status : it shows current status such as wpm, time ..
  */
-
 type App struct {
 	*tview.Application
 	flex          *tview.Flex
@@ -56,6 +56,8 @@ func (a *App) menuAction(action widget.MenuAction) {
 	switch action {
 	case widget.MenuActionNone:
 	case widget.MenuActionImportTheme:
+		bg := a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()]
+		a.flex.SetBackgroundColor(bg.GetBg())
 		a.sidebarWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
 		a.typingWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
 		a.statusWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
@@ -64,6 +66,7 @@ func (a *App) menuAction(action widget.MenuAction) {
 
 // Reset state
 func (a *App) Reset() {
+	//a.statusWidget.Init()
 }
 
 // NewApp returns initialized App struct
@@ -76,17 +79,20 @@ func NewApp() *App {
 		statusWidget:  widget.NewStatusWidget(),
 	}
 
-	// set function to sidebarWidget
+	// set function to side-bar widget
 	a.sidebarWidget.SetActionFunc(a.menuAction)
 
-	// config callback functions of typingWidget
+	// config callback functions of typing widget
+	// -> set focus to typing widget first time
 	a.typingWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key != nil {
 			a.SetFocus(a.typingWidget.Input)
 		}
 		return event
 	})
+	// -> realtime typing process callback
 	a.typingWidget.Input.SetChangedFunc(startTyping)
+	// -> SetDoneFunc sets a handler which is called when the user is done entering text.
 	a.typingWidget.Input.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyBackspace {
 			a.statusWidget.Status.AmiWrong[a.statusWidget.Status.Entries+1] = false
@@ -96,16 +102,17 @@ func NewApp() *App {
 		}
 	})
 
-	// set typingWidget frame
+	// set app layout
 	a.flex.AddItem(a.sidebarWidget, 0, 1, false).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
-			AddItem(a.typingWidget, 0, 8, true).
-			AddItem(a.statusWidget, 0, 1, false), 0, 9, true)
+			AddItem(a.typingWidget, 0, 2, true).
+			AddItem(a.statusWidget, 0, 1, false), 0, 10, true)
 	a.menuAction(widget.MenuActionImportTheme)
 
 	a.SetRoot(a.flex, true)
 	a.EnableMouse(true)
 
+	// config modal popup
 	popup = tview.NewModal().
 		SetText("Do you want replay?").
 		AddButtons([]string{"Yes", "Cancel"}).
@@ -134,12 +141,11 @@ func startTyping(text string) {
 	* store start time & elapsed
 	* compare current words with indicating words
 	 */
-
 	if !core.statusWidget.IsStarted() {
 		core.statusWidget.Init(core.typingWidget.GetSentence())
 
 		go func() {
-			// set AFK timeout (60 seconds) & update statusWidget each 100 miliseconds tick
+			// set AFK timeout (60 seconds) & update status widget each 100 miliseconds tick
 			timeout := time.After(60 * time.Second)
 			ticker := time.NewTicker(time.Millisecond * 50)
 			for range ticker.C {
@@ -147,12 +153,16 @@ func startTyping(text string) {
 				case <-timeout:
 					return
 				default:
-					// Update text statusWidget
+					// Update text status widget
 					core.QueueUpdateDraw(func() {
-						core.statusWidget.Wpm.SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetNetWpm()))
-						core.statusWidget.Accuracy.SetText(fmt.Sprintf("Accuracy : %.0f", core.statusWidget.GetAccuracy()))
-						core.statusWidget.Timer.SetText(fmt.Sprintf("Time : %.02f sec", core.statusWidget.GetElapsed()))
-						core.statusWidget.Count.SetText(fmt.Sprintf("Count : %d", core.statusWidget.GetCount()))
+						core.statusWidget.Wpm.
+							SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetNetWpm()))
+						core.statusWidget.Accuracy.
+							SetText(fmt.Sprintf("Accuracy : %.0f", core.statusWidget.GetAccuracy()))
+						core.statusWidget.Timer.
+							SetText(fmt.Sprintf("Time : %.02f sec", core.statusWidget.GetElapsed()))
+						core.statusWidget.Count.
+							SetText(fmt.Sprintf("Count : %d", core.statusWidget.GetCount()))
 					})
 				}
 			}
@@ -161,7 +171,8 @@ func startTyping(text string) {
 
 	// compare typingWidget word with target word & coloring , underlining
 	core.statusWidget.Status.Entries = len(text)
-	core.typingWidget.Text.SetText("\n\n" + diff(text, core.statusWidget.Status.Sentence) + "\n\n")
+	core.typingWidget.Text.
+		SetText("\n\n" + diff(text, core.statusWidget.Status.Sentence) + "\n\n")
 
 	// compare & check text length
 	if (len(core.statusWidget.Status.Sentence)) == len(text) {
@@ -172,7 +183,6 @@ func startTyping(text string) {
 		core.typingWidget.SetNextSentence()
 		core.statusWidget.Init(core.typingWidget.GetSentence())
 		core.typingWidget.ClearInputBox()
-
 	}
 }
 

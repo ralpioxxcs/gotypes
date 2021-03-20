@@ -7,8 +7,9 @@ import (
 
 var Logger log.Logger
 
+// Run main app
 func Run() {
-	a := NewApp()
+	app := NewApp()
 
 	f, err := os.OpenFile("log.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
@@ -19,7 +20,7 @@ func Run() {
 	Logger.Println("-----------------------------")
 
 	// Run tui main
-	if err := a.Run(); err != nil {
+	if err := app.Run(); err != nil {
 		panic(err)
 	}
 }
