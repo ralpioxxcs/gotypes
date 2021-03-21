@@ -10,6 +10,7 @@ import (
 	_ "strings"
 )
 
+// word contains words each languages
 type word struct {
 	English     []string `json:"english"`
 	Korean      []string `json:"korean"`
@@ -17,7 +18,7 @@ type word struct {
 }
 
 // TypingBox is a box which display words be typed
-// it include tview TextView , InputField struct
+// It include struct of tview.TextView , tview.InputField
 type TypingWidget struct {
 	*tview.Flex
 	Text  *tview.TextView
@@ -26,19 +27,21 @@ type TypingWidget struct {
 	count int
 }
 
-func (t *TypingWidget) ApplyColor(p palette) {
-	t.SetTitleColor(p.title)
+// ApplyColor apply current theme color on widget
+func (w *TypingWidget) ApplyColor(p palette) {
+	w.SetTitleColor(p.title)
 
-	t.Text.SetBackgroundColor(p.background)
-	t.Text.SetTextColor(p.foreground)
-	t.Text.SetBorderColor(p.border)
+	w.Text.SetBackgroundColor(p.background)
+	w.Text.SetTextColor(p.foreground)
+	w.Text.SetBorderColor(p.border)
 
-	t.Input.SetBackgroundColor(p.background)
-	t.Input.SetFieldTextColor(p.foreground)
-	t.Input.SetFieldBackgroundColor(p.border)
-	t.Input.SetBorderColor(p.border)
+	w.Input.SetBackgroundColor(p.background)
+	w.Input.SetFieldTextColor(p.foreground)
+	w.Input.SetFieldBackgroundColor(p.border)
+	w.Input.SetBorderColor(p.border)
 }
 
+// Update updates word list whether it is correct or not
 func (w *TypingWidget) Update(colored string, index int) {
 	var wordlines string
 
@@ -51,33 +54,33 @@ func (w *TypingWidget) Update(colored string, index int) {
 	w.Text.SetTextAlign(tview.AlignCenter)
 }
 
-func (t *TypingWidget) ClearInputBox() {
-	t.Input.SetText("")
+func (w *TypingWidget) ClearInputBox() {
+	w.Input.SetText("")
 }
 
 func NewTypingWidget() *TypingWidget {
-	t := &TypingWidget{
+	w := &TypingWidget{
 		Flex:  tview.NewFlex(),
 		Text:  tview.NewTextView(),
 		Input: tview.NewInputField(),
 		count: 0,
 	}
 
-	t.Text.SetBorder(true)
-	t.Text.SetDynamicColors(true)
+	w.Text.SetBorder(true)
+	w.Text.SetDynamicColors(true)
 
-	t.Input.
+	w.Input.
 		SetPlaceholder("Type to start").
 		SetLabelWidth(0).
 		SetFieldWidth(0).
 		SetPlaceholderTextColor(tcell.ColorBlack).
 		SetFieldBackgroundColor(tcell.ColorGold).
 		SetFieldTextColor(tcell.ColorBlack)
-	t.Input.SetBorder(true)
+	w.Input.SetBorder(true)
 
-	t.SetDirection(tview.FlexRow).
-		AddItem(t.Text, 10, 0, false).
-		AddItem(t.Input, 3, 0, true)
+	w.SetDirection(tview.FlexRow).
+		AddItem(w.Text, 10, 0, false).
+		AddItem(w.Input, 3, 0, true)
 
 	// load & display words
 	jsonFile, err := os.Open("data/test.json")
@@ -87,15 +90,15 @@ func NewTypingWidget() *TypingWidget {
 	defer jsonFile.Close()
 
 	byteValue, _ := ioutil.ReadAll(jsonFile)
-	json.Unmarshal(byteValue, &t.Words)
+	json.Unmarshal(byteValue, &w.Words)
 
 	var wordlines string
 	const num = 20
 	for i := 0; i < num; i++ {
-		wordlines = wordlines + " " + t.Words.English[i]
+		wordlines = wordlines + " " + w.Words.English[i]
 	}
-	t.Text.SetText(wordlines)
-	t.Text.SetTextAlign(tview.AlignCenter)
+	w.Text.SetText(wordlines)
+	w.Text.SetTextAlign(tview.AlignCenter)
 
-	return t
+	return w
 }

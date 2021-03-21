@@ -140,7 +140,6 @@ var popup *tview.Modal
 // startTyping process typing functions
 // * text : current text
 func startTyping(text string) {
-
 	/*
 	* store start time & elapsed
 	* compare current words with indicating words
@@ -172,17 +171,21 @@ func startTyping(text string) {
 			}
 		}()
 	}
+	// check to pass next word
+	if (len(core.statusWidget.Status.GetCurrentWord())) < len(text) {
+		runes := []rune(text)
+		if runes[len(text)-1] == ' ' { // check whitespace
+			core.statusWidget.Status.AddCount()
+			core.typingWidget.ClearInputBox()
+		}
+		return
+		//core.SetRoot(popup, false).SetFocus(popup).Run()
+	}
+
 	// compare typingWidget word with target word & coloring , underlining
 	core.statusWidget.Status.Entries = len(text)
 	core.typingWidget.Update(
 		diff(text, core.statusWidget.Status.GetCurrentWord()), core.statusWidget.GetCount())
-
-	// check to pass next word
-	if (len(core.statusWidget.Status.GetCurrentWord())) == len(text) {
-		core.statusWidget.Status.AddCount()
-		core.typingWidget.ClearInputBox()
-		//core.SetRoot(popup, false).SetFocus(popup).Run()
-	}
 }
 
 // diffText handles each event keys
@@ -196,6 +199,10 @@ func diffText(key tcell.Key) {
 
 // diff returns colored string which compareed
 func diff(curr string, target string) (colored string) {
+	//if len(curr) >= len(target) {
+	//  return curr
+	//}
+
 	colored = ""
 
 	for i := range curr {
