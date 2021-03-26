@@ -32,7 +32,7 @@ func (w *TypingWidget) ApplyColor(p palette) {
 	w.SetTitleColor(p.title)
 
 	w.Text.SetBackgroundColor(p.background)
-	w.Text.SetTextColor(p.foreground)
+	w.Text.SetTextColor(p.border)
 	w.Text.SetBorderColor(p.border)
 
 	w.Input.SetBackgroundColor(p.background)

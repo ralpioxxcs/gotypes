@@ -15,6 +15,7 @@ var themesString = []string{
 	"Laser",
 	"Hammerhead",
 	"8008",
+	"Nautilus",
 }
 
 type themes map[string]palette
@@ -31,6 +32,7 @@ func NewThemes() themes {
 		"Laser":      Laser(),
 		"Hammerhead": Hammerhead(),
 		"8008":       t8008(),
+		"Nautilus":   Nautilus(),
 	}
 }
 
@@ -163,6 +165,18 @@ func t8008() palette {
 		background: tcell.GetColor("#333a45"),
 		foreground: tcell.GetColor("#e9ecf0"),
 		border:     tcell.GetColor("#939eae"),
+		extra:      tcell.GetColor("#da3333"),
+	}
+}
+
+// Nautilus returns gmk nautilus theme colour code
+func Nautilus() palette {
+	return palette{
+		name:       "nautilus",
+		title:      tcell.GetColor("#ebb723"),
+		background: tcell.GetColor("#132237"),
+		foreground: tcell.GetColor("#1cbaac"),
+		border:     tcell.GetColor("#0b4c6c"),
 		extra:      tcell.GetColor("#da3333"),
 	}
 }

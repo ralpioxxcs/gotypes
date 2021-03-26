@@ -27,10 +27,9 @@ func (w *ConfigWidget) ApplyColor(p palette) {
 	w.SetBorderColor(p.border)
 
 	w.LanguageList.SetBackgroundColor(p.background)
+	w.LanguageList.SetLabelColor(p.title)
 	w.LanguageList.SetFieldTextColor(p.foreground)
 	w.LanguageList.SetFieldBackgroundColor(p.border)
-	//w.SoundList.SetBackgroundColor(p.background)
-	//w.SoundList.SetFieldTextColor(p.foreground)
 }
 
 func (w *ConfigWidget) SetLanguage(lang int) {

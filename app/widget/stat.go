@@ -51,6 +51,12 @@ func (t *StatusWidget) ApplyColor(p palette) {
 	t.Accuracy.SetBackgroundColor(p.background)
 	t.Timer.SetBackgroundColor(p.background)
 	t.Count.SetBackgroundColor(p.background)
+
+	t.Wpm.SetTextColor(p.title)
+	t.Accuracy.SetTextColor(p.title)
+	t.Timer.SetTextColor(p.title)
+	t.Count.SetTextColor(p.title)
+
 	t.SetTitleColor(p.title)
 	t.SetBorderColor(p.border)
 }
