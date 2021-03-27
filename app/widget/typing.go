@@ -17,14 +17,27 @@ type word struct {
 	English1000 []string `json:"english1000"`
 }
 
+// CopyTo copies slices element (deep copy)
+func (w *word) CopyTo() (dst word) {
+	dst.English = make([]string, len(w.English))
+	dst.English1000 = make([]string, len(w.English1000))
+	dst.Korean = make([]string, len(w.Korean))
+	copy(dst.English, w.English)
+	copy(dst.English1000, w.English1000)
+	copy(dst.Korean, w.Korean)
+
+	return dst
+}
+
 // TypingBox is a box which display words be typed
 // It include struct of tview.TextView , tview.InputField
 type TypingWidget struct {
 	*tview.Flex
-	Text  *tview.TextView
-	Input *tview.InputField
-	Words word
-	count int
+	Text         *tview.TextView
+	Input        *tview.InputField
+	Words        word
+	DisplayWords word
+	count        int
 }
 
 // ApplyColor apply current theme color on widget
@@ -42,14 +55,15 @@ func (w *TypingWidget) ApplyColor(p palette) {
 }
 
 // Update updates word list whether it is correct or not
+//
 func (w *TypingWidget) Update(colored string, index int) {
-	var wordlines string
+	w.DisplayWords.English[index] = colored
 
-	wordlines += colored
-	const num = 20
-	for i := index + 1; i < num; i++ {
-		wordlines = wordlines + " " + w.Words.English[i]
+	var wordlines string
+	for i := 0; i < w.count; i++ {
+		wordlines = wordlines + " " + w.DisplayWords.English[i]
 	}
+
 	w.Text.SetText(wordlines)
 	w.Text.SetTextAlign(tview.AlignCenter)
 }
@@ -63,7 +77,7 @@ func NewTypingWidget() *TypingWidget {
 		Flex:  tview.NewFlex(),
 		Text:  tview.NewTextView(),
 		Input: tview.NewInputField(),
-		count: 0,
+		count: 20,
 	}
 
 	w.Text.SetBorder(true)
@@ -92,10 +106,11 @@ func NewTypingWidget() *TypingWidget {
 	byteValue, _ := ioutil.ReadAll(jsonFile)
 	json.Unmarshal(byteValue, &w.Words)
 
+	w.DisplayWords = w.Words.CopyTo()
+
 	var wordlines string
-	const num = 20
-	for i := 0; i < num; i++ {
-		wordlines = wordlines + " " + w.Words.English[i]
+	for i := 0; i < w.count; i++ {
+		wordlines = wordlines + " " + w.DisplayWords.English[i]
 	}
 	w.Text.SetText(wordlines)
 	w.Text.SetTextAlign(tview.AlignCenter)

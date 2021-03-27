@@ -225,5 +225,5 @@ func diff(curr string, target string) (colored string) {
 		colored += string(target[i])
 	}
 
-	return
+	return colored
 }
