@@ -28,7 +28,7 @@ func (t *Status) AddCount() {
 }
 
 func (t *Status) GetCurrentWord() string {
-	return t.Words[t.count]
+	return t.Words[t.count-1]
 }
 
 // StatusWidget is frame which display general typing information ( wpm, time ,,)
@@ -61,15 +61,19 @@ func (t *StatusWidget) ApplyColor(p palette) {
 	t.SetBorderColor(p.border)
 }
 
+// Init initialize string slice of status widget
 func (w *StatusWidget) Init(words []string) {
 	if w.Status.StartTime.IsZero() {
 		w.Status.StartTime = time.Now()
 	}
-	w.Status.Words = words
+
+	w.Status.Words = make([]string, len(words))
+	copy(w.Status.Words, words)
 	w.Status.AmiWrong = make([]bool, len(words))
 	for i := range words {
 		w.Status.AmiWrong[i] = false
 	}
+
 	w.start = true
 }
 
@@ -79,9 +83,9 @@ func (t *StatusWidget) IsStarted() bool {
 }
 
 // GetGrossWpm returns current wpm (word per minutes)
-// * Gross WPM = (All typed entries / 5) / Time (min)
+// * Gross WPM = (All typed entries) / Time (min)
 func (t *StatusWidget) GetGrossWpm() float64 {
-	return float64(t.Status.Entries/5) / time.Since(t.Status.StartTime).Minutes()
+	return float64(t.Status.count) / time.Since(t.Status.StartTime).Minutes()
 }
 
 // GetNetWpm returns current wpm include errors
@@ -92,12 +96,13 @@ func (t *StatusWidget) GetNetWpm() float64 {
 
 // GetAccuracy returns current word accuracy
 func (t *StatusWidget) GetAccuracy() float64 {
-	if t.Status.Entries == 0 {
-		return 0
-	} else if t.Status.WrongCount == 0 {
-		return 100
-	}
-	return float64(float64(t.Status.Entries-t.Status.WrongCount)/float64(t.Status.Entries)) * 100
+	//if t.Status.Entries == 0 {
+	//  return 0
+	//} else if t.Status.WrongCount == 0 {
+	//  return 100
+	//}
+	//return float64(float64(t.Status.Entries-t.Status.WrongCount)/float64(t.Status.Entries)) * 100
+	return float64(float64(t.Status.count-t.Status.WrongCount)/float64(t.Status.count)) * 100
 }
 
 // GetElapsed returns current time elapsed
@@ -116,7 +121,7 @@ func NewStatus() *Status {
 		WrongCount: 0,
 		wpm:        0,
 		accuracy:   0,
-		count:      0,
+		count:      1,
 	}
 	return s
 }

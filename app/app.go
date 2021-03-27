@@ -158,8 +158,10 @@ func startTyping(text string) {
 				default:
 					// Update text status widget
 					core.QueueUpdateDraw(func() {
+						//core.statusWidget.Wpm.
+						//  SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetNetWpm()))
 						core.statusWidget.Wpm.
-							SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetNetWpm()))
+							SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetGrossWpm()))
 						core.statusWidget.Accuracy.
 							SetText(fmt.Sprintf("Accuracy : %.0f", core.statusWidget.GetAccuracy()))
 						core.statusWidget.Timer.
@@ -185,7 +187,7 @@ func startTyping(text string) {
 	// compare typingWidget word with target word & coloring , underlining
 	core.statusWidget.Status.Entries = len(text)
 	core.typingWidget.Update(
-		diff(text, core.statusWidget.Status.GetCurrentWord()), core.statusWidget.GetCount())
+		diff(text, core.statusWidget.Status.GetCurrentWord()), core.statusWidget.GetCount()-1)
 }
 
 // diffText handles each event keys
@@ -199,10 +201,6 @@ func diffText(key tcell.Key) {
 
 // diff returns colored string which compareed
 func diff(curr string, target string) (colored string) {
-	//if len(curr) >= len(target) {
-	//  return curr
-	//}
-
 	colored = ""
 
 	for i := range curr {

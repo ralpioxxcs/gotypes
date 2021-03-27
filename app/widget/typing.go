@@ -64,7 +64,7 @@ func (w *TypingWidget) Update(colored string, index int) {
 		wordlines = wordlines + " " + w.DisplayWords.English[i]
 	}
 
-	w.Text.SetText(wordlines)
+	w.Text.SetText("\n\n" + wordlines)
 	w.Text.SetTextAlign(tview.AlignCenter)
 }
 
@@ -112,7 +112,7 @@ func NewTypingWidget() *TypingWidget {
 	for i := 0; i < w.count; i++ {
 		wordlines = wordlines + " " + w.DisplayWords.English[i]
 	}
-	w.Text.SetText(wordlines)
+	w.Text.SetText("\n\n" + wordlines)
 	w.Text.SetTextAlign(tview.AlignCenter)
 
 	return w
