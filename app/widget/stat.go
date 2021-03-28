@@ -2,7 +2,6 @@ package widget
 
 import (
 	"github.com/rivo/tview"
-	_ "strings"
 	"time"
 )
 
@@ -82,15 +81,9 @@ func (w *StatusWidget) Init(words []string) {
 	w.Status.Words = make([]Word, len(words))
 	for i, v := range words {
 		w.Status.Words[i].CopyWord(v)
+
+		w.Status.Entries += len(v)
 	}
-
-	//w.Status.Words = make([]string, len(words))
-	//copy(w.Status.Words, words)
-
-	//w.Status.AmiWrong = make([]bool, len(words))
-	//for i := range words {
-	//  w.Status.AmiWrong[i] = false
-	//}
 
 	w.start = true
 }
@@ -114,13 +107,7 @@ func (t *StatusWidget) GetNetWpm() float64 {
 
 // GetAccuracy returns current word accuracy
 func (t *StatusWidget) GetAccuracy() float64 {
-	//if t.Status.Entries == 0 {
-	//  return 0
-	//} else if t.Status.WrongEntries == 0 {
-	//  return 100
-	//}
-	//return float64(float64(t.Status.Entries-t.Status.WrongEntries)/float64(t.Status.Entries)) * 100
-	return float64(float64(t.Status.count-t.Status.WrongEntries)/float64(t.Status.count)) * 100
+	return float64(float64(t.Status.Entries-t.Status.WrongEntries)/float64(t.Status.Entries)) * 100
 }
 
 // GetElapsed returns current time elapsed

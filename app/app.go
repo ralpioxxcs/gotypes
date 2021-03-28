@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	//"strings"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -185,9 +184,11 @@ func startTyping(text string) {
 	}
 
 	// compare typingWidget word with target word & coloring , underlining
-	core.statusWidget.Status.Entries = len(text)
+	palette := core.sidebarWidget.Theme[core.sidebarWidget.GetCurrentTheme()]
+	_, _, fg, _, err := palette.ToHexString()
+
 	core.typingWidget.Update(
-		diff(text, core.statusWidget.Status.GetCurrentWord()), core.statusWidget.GetCount()-1)
+		diff(text, core.statusWidget.Status.GetCurrentWord(), fg, err), core.statusWidget.GetCount()-1)
 }
 
 // diffText handles each event keys
@@ -200,17 +201,18 @@ func diffText(key tcell.Key) {
 }
 
 // diff returns colored string of current word
-func diff(curr string, target widget.Word) (colored string) {
-
+func diff(curr string, target widget.Word, textcolor string, textcolor_error string) (colored string) {
 	for i := range curr {
 		if curr[i] == target.Text[i] {
-			colored += "[green]" + string(curr[i])
+			//colored += "[green]" + string(curr[i])
+			colored += "[#" + textcolor + "]" + string(curr[i])
 			if target.Iswrong[i] == true {
 				core.statusWidget.Status.WrongEntries--
 			}
 			target.Iswrong[i] = false
 		} else {
-			colored += "[red]" + string(target.Text[i])
+			//colored += "[red]" + string(target.Text[i])
+			colored += "[#" + textcolor_error + "]" + string(target.Text[i])
 			if target.Iswrong[i] == false {
 				target.Iswrong[i] = true
 				core.statusWidget.Status.WrongEntries++
@@ -221,6 +223,5 @@ func diff(curr string, target widget.Word) (colored string) {
 	for i := len(curr); i < len(target.Text); i++ {
 		colored += string(target.Text[i])
 	}
-
 	return colored
 }

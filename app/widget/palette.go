@@ -2,6 +2,8 @@ package widget
 
 import (
 	"github.com/gdamore/tcell/v2"
+	"strconv"
+	"strings"
 )
 
 var themesString = []string{
@@ -43,6 +45,18 @@ type palette struct {
 	foreground tcell.Color
 	border     tcell.Color
 	extra      tcell.Color
+}
+
+func (p *palette) ToHexString() (title, background, foreground, border, extra string) {
+	title = strconv.FormatUint(uint64(p.title), 16)
+	background = strconv.FormatUint(uint64(p.background), 16)
+	foreground = strconv.FormatUint(uint64(p.foreground), 16)
+	border = strconv.FormatUint(uint64(p.border), 16)
+	extra = strconv.FormatUint(uint64(p.extra), 16)
+
+	foreground = strings.ReplaceAll(foreground, "300", "")
+	extra = strings.ReplaceAll(extra, "300", "")
+	return title, background, foreground, border, extra
 }
 
 func (p *palette) GetBg() tcell.Color {
