@@ -6,28 +6,40 @@ import (
 	"time"
 )
 
-//
+// keyboard
 type keyboard struct {
 	temp string
 }
 
-// Status describe general Status (wpm, time, accuracy ..)
+type Word struct {
+	Text    string
+	Iswrong []bool
+}
+
+func (w *Word) CopyWord(src string) {
+	w.Text = src
+	w.Iswrong = make([]bool, len(src))
+	for i := range w.Iswrong {
+		w.Iswrong[i] = false
+	}
+}
+
+// Status describe general typing status (wpm, time, accuracy ..)
 type Status struct {
-	Entries    int       // total character count
-	WrongCount int       // wrong character count
-	AmiWrong   []bool    // if each character is typed wronly for calculate accuracy
-	Words      []string  // store each words
-	StartTime  time.Time // start time
-	wpm        float64   // words per minute value for display
-	accuracy   int       // typing accuracy for display
-	count      int       // total typing sentence count
+	Entries      int       // total character count
+	WrongEntries int       // wrong character count
+	Words        []Word    // word list
+	StartTime    time.Time // start time
+	wpm          float64   // words per minute value for display
+	accuracy     int       // typing accuracy for display
+	count        int       // total typing sentence count
 }
 
 func (t *Status) AddCount() {
 	t.count += 1
 }
 
-func (t *Status) GetCurrentWord() string {
+func (t *Status) GetCurrentWord() Word {
 	return t.Words[t.count-1]
 }
 
@@ -67,12 +79,18 @@ func (w *StatusWidget) Init(words []string) {
 		w.Status.StartTime = time.Now()
 	}
 
-	w.Status.Words = make([]string, len(words))
-	copy(w.Status.Words, words)
-	w.Status.AmiWrong = make([]bool, len(words))
-	for i := range words {
-		w.Status.AmiWrong[i] = false
+	w.Status.Words = make([]Word, len(words))
+	for i, v := range words {
+		w.Status.Words[i].CopyWord(v)
 	}
+
+	//w.Status.Words = make([]string, len(words))
+	//copy(w.Status.Words, words)
+
+	//w.Status.AmiWrong = make([]bool, len(words))
+	//for i := range words {
+	//  w.Status.AmiWrong[i] = false
+	//}
 
 	w.start = true
 }
@@ -91,18 +109,18 @@ func (t *StatusWidget) GetGrossWpm() float64 {
 // GetNetWpm returns current wpm include errors
 // * Net WPM = (All typed entries / 5) - ( Uncorrected Errors / Time (min) )
 func (t *StatusWidget) GetNetWpm() float64 {
-	return t.GetGrossWpm() - (float64(t.Status.WrongCount) / time.Since(t.Status.StartTime).Minutes())
+	return t.GetGrossWpm() - (float64(t.Status.WrongEntries) / time.Since(t.Status.StartTime).Minutes())
 }
 
 // GetAccuracy returns current word accuracy
 func (t *StatusWidget) GetAccuracy() float64 {
 	//if t.Status.Entries == 0 {
 	//  return 0
-	//} else if t.Status.WrongCount == 0 {
+	//} else if t.Status.WrongEntries == 0 {
 	//  return 100
 	//}
-	//return float64(float64(t.Status.Entries-t.Status.WrongCount)/float64(t.Status.Entries)) * 100
-	return float64(float64(t.Status.count-t.Status.WrongCount)/float64(t.Status.count)) * 100
+	//return float64(float64(t.Status.Entries-t.Status.WrongEntries)/float64(t.Status.Entries)) * 100
+	return float64(float64(t.Status.count-t.Status.WrongEntries)/float64(t.Status.count)) * 100
 }
 
 // GetElapsed returns current time elapsed
@@ -117,11 +135,11 @@ func (t *StatusWidget) GetCount() int {
 
 func NewStatus() *Status {
 	s := &Status{
-		Entries:    0,
-		WrongCount: 0,
-		wpm:        0,
-		accuracy:   0,
-		count:      1,
+		Entries:      0,
+		WrongEntries: 0,
+		wpm:          0,
+		accuracy:     0,
+		count:        1,
 	}
 	return s
 }

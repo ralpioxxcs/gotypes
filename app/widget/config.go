@@ -19,11 +19,6 @@ const (
 	Korean
 )
 
-var languages = []string{
-	"English",
-	"Korean",
-}
-
 func (w *ConfigWidget) ApplyColor(p palette) {
 	w.SetTitleColor(p.title)
 	w.SetBorderColor(p.border)
@@ -61,7 +56,7 @@ func NewConfigWidget() *ConfigWidget {
 	c.WordCountList.SetLabel("# Words : ").
 		SetOptions([]string{"15", "30", "60", "120"}, nil)
 	c.LanguageList.SetLabel("# Language :").
-		SetOptions(languages, nil)
+		SetOptions([]string{"English", "Korean"}, nil)
 	c.SoundList.SetLabel("# Sound").
 		SetOptions([]string{"on", "off"}, nil)
 

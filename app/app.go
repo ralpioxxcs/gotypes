@@ -98,7 +98,7 @@ func NewApp() *App {
 	// -> SetDoneFunc sets a handler which is called when the user is done entering text.
 	a.typingWidget.Input.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyBackspace {
-			a.statusWidget.Status.AmiWrong[a.statusWidget.Status.Entries+1] = false
+			//a.statusWidget.Status.Words.Iswrong[a.statusWidget.Status.Entries+1] = false
 		}
 		if key == tcell.KeyTab {
 			a.Reset()
@@ -174,7 +174,7 @@ func startTyping(text string) {
 		}()
 	}
 	// check to pass next word
-	if (len(core.statusWidget.Status.GetCurrentWord())) < len(text) {
+	if (len(core.statusWidget.Status.GetCurrentWord().Text)) < len(text) {
 		runes := []rune(text)
 		if runes[len(text)-1] == ' ' { // check whitespace
 			core.statusWidget.Status.AddCount()
@@ -199,28 +199,27 @@ func diffText(key tcell.Key) {
 	}
 }
 
-// diff returns colored string which compareed
-func diff(curr string, target string) (colored string) {
-	colored = ""
+// diff returns colored string of current word
+func diff(curr string, target widget.Word) (colored string) {
 
 	for i := range curr {
-		if curr[i] == target[i] {
+		if curr[i] == target.Text[i] {
 			colored += "[green]" + string(curr[i])
-			if core.statusWidget.Status.AmiWrong[i] == true {
-				core.statusWidget.Status.WrongCount--
+			if target.Iswrong[i] == true {
+				core.statusWidget.Status.WrongEntries--
 			}
-			core.statusWidget.Status.AmiWrong[i] = false
+			target.Iswrong[i] = false
 		} else {
-			colored += "[red]" + string(target[i])
-			if core.statusWidget.Status.AmiWrong[i] == false {
-				core.statusWidget.Status.AmiWrong[i] = true
-				core.statusWidget.Status.WrongCount++
+			colored += "[red]" + string(target.Text[i])
+			if target.Iswrong[i] == false {
+				target.Iswrong[i] = true
+				core.statusWidget.Status.WrongEntries++
 			}
 		}
 	}
 	colored += "[-]"
-	for i := len(curr); i < len(target); i++ {
-		colored += string(target[i])
+	for i := len(curr); i < len(target.Text); i++ {
+		colored += string(target.Text[i])
 	}
 
 	return colored

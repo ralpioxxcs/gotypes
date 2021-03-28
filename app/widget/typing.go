@@ -10,15 +10,15 @@ import (
 	_ "strings"
 )
 
-// word contains words each languages
-type word struct {
+// languages contains words each languages
+type languages struct {
 	English     []string `json:"english"`
 	Korean      []string `json:"korean"`
 	English1000 []string `json:"english1000"`
 }
 
 // CopyTo copies slices element (deep copy)
-func (w *word) CopyTo() (dst word) {
+func (w *languages) CopyTo() (dst languages) {
 	dst.English = make([]string, len(w.English))
 	dst.English1000 = make([]string, len(w.English1000))
 	dst.Korean = make([]string, len(w.Korean))
@@ -35,8 +35,8 @@ type TypingWidget struct {
 	*tview.Flex
 	Text         *tview.TextView
 	Input        *tview.InputField
-	Words        word
-	DisplayWords word
+	Words        languages
+	DisplayWords languages
 	count        int
 }
 
