@@ -19,6 +19,7 @@ import (
 type App struct {
 	*tview.Application
 	flex          *tview.Flex
+	blank         *tview.Box
 	sidebarWidget *widget.ThemeList
 	typingWidget  *widget.TypingWidget
 	statusWidget  *widget.StatusWidget
@@ -58,6 +59,7 @@ func (a *App) menuAction(action widget.MenuAction) {
 	case widget.MenuActionImportTheme:
 		bg := a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()]
 		a.flex.SetBackgroundColor(bg.GetBg())
+		a.blank.SetBackgroundColor(bg.GetBg())
 		a.sidebarWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
 		a.typingWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
 		a.statusWidget.ApplyColor(a.sidebarWidget.Theme[a.sidebarWidget.GetCurrentTheme()])
@@ -75,6 +77,7 @@ func NewApp() *App {
 	a := &App{
 		Application:   tview.NewApplication(),
 		flex:          tview.NewFlex(),
+		blank:         tview.NewBox(),
 		sidebarWidget: widget.NewThemeList(),
 		typingWidget:  widget.NewTypingWidget(),
 		statusWidget:  widget.NewStatusWidget(),
@@ -108,8 +111,9 @@ func NewApp() *App {
 	a.flex.AddItem(a.sidebarWidget, 0, 1, false).
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(a.typingWidget, 0, 5, true).
-			AddItem(a.statusWidget, 6, 0, false).
-			AddItem(a.configWidget, 6, 0, false), 0, 10, true)
+			AddItem(a.blank, 0, 5, false).
+			AddItem(a.statusWidget, 0, 3, false).
+			AddItem(a.configWidget, 0, 3, true), 0, 10, true)
 	a.menuAction(widget.MenuActionImportTheme)
 
 	a.SetRoot(a.flex, true)

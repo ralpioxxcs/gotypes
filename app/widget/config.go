@@ -20,6 +20,7 @@ const (
 )
 
 func (w *ConfigWidget) ApplyColor(p palette) {
+	w.SetBackgroundColor(p.background)
 	w.SetTitleColor(p.title)
 	w.SetBorderColor(p.border)
 

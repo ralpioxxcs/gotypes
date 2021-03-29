@@ -64,7 +64,7 @@ func (w *TypingWidget) Update(colored string, index int) {
 		wordlines = wordlines + " " + w.DisplayWords.English[i]
 	}
 
-	w.Text.SetText("\n\n" + wordlines)
+	w.Text.SetText("\n\n\n\n\n" + wordlines)
 	w.Text.SetTextAlign(tview.AlignCenter)
 }
 

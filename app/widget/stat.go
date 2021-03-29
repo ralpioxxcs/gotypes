@@ -144,10 +144,10 @@ func NewStatusWidget() *StatusWidget {
 	}
 
 	d.Flex.SetDirection(tview.FlexRow).
-		AddItem(d.Wpm, 1, 0, false).
-		AddItem(d.Accuracy, 1, 0, false).
-		AddItem(d.Timer, 1, 0, false).
-		AddItem(d.Count, 1, 0, false)
+		AddItem(d.Wpm, 0, 1, false).
+		AddItem(d.Accuracy, 0, 1, false).
+		AddItem(d.Timer, 0, 1, false).
+		AddItem(d.Count, 0, 1, false)
 
 	d.SetBorder(true)
 	d.SetTitle("Status")
