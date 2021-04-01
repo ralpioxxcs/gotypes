@@ -67,6 +67,8 @@ func (a *App) menuAction(action widget.MenuAction) {
 	}
 }
 
+//func (a *App) inputCapture(event *tcell.EventKey) *tcell.EventKey {
+
 // Reset state
 func (a *App) Reset() {
 	//a.statusWidget.Init()
@@ -90,11 +92,16 @@ func NewApp() *App {
 	// config callback functions of typing widget
 	// -> set focus to typing widget first time
 	a.typingWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key != nil {
-			a.SetFocus(a.typingWidget.Input)
+		a.SetFocus(a.typingWidget.Input)
+		return event
+	})
+	a.configWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyTab {
+			a.SetFocus(a.configWidget.SoundList)
 		}
 		return event
 	})
+
 	// -> realtime typing process callback
 	a.typingWidget.Input.SetChangedFunc(startTyping)
 	// -> SetDoneFunc sets a handler which is called when the user is done entering text.
@@ -131,13 +138,13 @@ func NewApp() *App {
 			}
 		})
 
-	core = a
+	Core = a
 
 	return a
 }
 
 // App instance handler
-var core *App
+var Core *App
 var popup *tview.Modal
 
 // startTyping process typing functions
@@ -147,8 +154,8 @@ func startTyping(text string) {
 	* store start time & elapsed
 	* compare current words with indicating words
 	 */
-	if !core.statusWidget.IsStarted() {
-		core.statusWidget.Init(core.typingWidget.Words.English)
+	if !Core.statusWidget.IsStarted() {
+		Core.statusWidget.Init(Core.typingWidget.Words.English)
 
 		go func() {
 			// set AFK timeout (60 seconds) & update status widget each 100 miliseconds tick
@@ -160,39 +167,39 @@ func startTyping(text string) {
 					return
 				default:
 					// Update text status widget
-					core.QueueUpdateDraw(func() {
-						//core.statusWidget.Wpm.
-						//  SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetNetWpm()))
-						core.statusWidget.Wpm.
-							SetText(fmt.Sprintf("Wpm : %.0f", core.statusWidget.GetGrossWpm()))
-						core.statusWidget.Accuracy.
-							SetText(fmt.Sprintf("Accuracy : %.0f", core.statusWidget.GetAccuracy()))
-						core.statusWidget.Timer.
-							SetText(fmt.Sprintf("Time : %.02f sec", core.statusWidget.GetElapsed()))
-						core.statusWidget.Count.
-							SetText(fmt.Sprintf("Count : %d", core.statusWidget.GetCount()))
+					Core.QueueUpdateDraw(func() {
+						//Core.statusWidget.Wpm.
+						//  SetText(fmt.Sprintf("Wpm : %.0f", Core.statusWidget.GetNetWpm()))
+						Core.statusWidget.Wpm.
+							SetText(fmt.Sprintf("Wpm : %.0f", Core.statusWidget.GetGrossWpm()))
+						Core.statusWidget.Accuracy.
+							SetText(fmt.Sprintf("Accuracy : %.0f", Core.statusWidget.GetAccuracy()))
+						Core.statusWidget.Timer.
+							SetText(fmt.Sprintf("Time : %.02f sec", Core.statusWidget.GetElapsed()))
+						Core.statusWidget.Count.
+							SetText(fmt.Sprintf("Count : %d", Core.statusWidget.GetCount()))
 					})
 				}
 			}
 		}()
 	}
 	// check to pass next word
-	if (len(core.statusWidget.Status.GetCurrentWord().Text)) < len(text) {
+	if (len(Core.statusWidget.Status.GetCurrentWord().Text)) < len(text) {
 		runes := []rune(text)
 		if runes[len(text)-1] == ' ' { // check whitespace
-			core.statusWidget.Status.AddCount()
-			core.typingWidget.ClearInputBox()
+			Core.statusWidget.Status.AddCount()
+			Core.typingWidget.ClearInputBox()
 		}
 		return
-		//core.SetRoot(popup, false).SetFocus(popup).Run()
+		//Core.SetRoot(popup, false).SetFocus(popup).Run()
 	}
 
 	// compare typingWidget word with target word & coloring , underlining
-	palette := core.sidebarWidget.Theme[core.sidebarWidget.GetCurrentTheme()]
+	palette := Core.sidebarWidget.Theme[Core.sidebarWidget.GetCurrentTheme()]
 	_, _, fg, _, err := palette.ToHexString()
 
-	core.typingWidget.Update(
-		diff(text, core.statusWidget.Status.GetCurrentWord(), fg, err), core.statusWidget.GetCount()-1)
+	Core.typingWidget.Update(
+		diff(text, Core.statusWidget.Status.GetCurrentWord(), fg, err), Core.statusWidget.GetCount()-1)
 }
 
 // diffText handles each event keys
@@ -211,7 +218,7 @@ func diff(curr string, target widget.Word, textcolor string, textcolor_error str
 			//colored += "[green]" + string(curr[i])
 			colored += "[#" + textcolor + "]" + string(curr[i])
 			if target.Iswrong[i] == true {
-				core.statusWidget.Status.WrongEntries--
+				Core.statusWidget.Status.WrongEntries--
 			}
 			target.Iswrong[i] = false
 		} else {
@@ -219,7 +226,7 @@ func diff(curr string, target widget.Word, textcolor string, textcolor_error str
 			colored += "[#" + textcolor_error + "]" + string(target.Text[i])
 			if target.Iswrong[i] == false {
 				target.Iswrong[i] = true
-				core.statusWidget.Status.WrongEntries++
+				Core.statusWidget.Status.WrongEntries++
 			}
 		}
 	}

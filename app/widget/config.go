@@ -1,6 +1,7 @@
 package widget
 
 import (
+	//"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -44,6 +45,18 @@ func (w *ConfigWidget) SetLanguage(lang int) {
 	w.language = lang
 }
 
+//func (w *ConfigWidget) InputHandler() func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+//  return w.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p tview.Primitive)) {
+//    switch event.Key() {
+//    case tcell.KeyTab:
+
+//    case tcell.KeyLeft:
+
+//    case tcell.KeyRight:
+//    }
+//  })
+//}
+
 func NewConfigWidget() *ConfigWidget {
 	c := &ConfigWidget{
 		Flex:          tview.NewFlex(),
@@ -61,9 +74,9 @@ func NewConfigWidget() *ConfigWidget {
 	c.SoundList.SetLabel("# Sound").
 		SetOptions([]string{"on", "off"}, nil)
 
-	c.AddItem(c.WordCountList, 0, 1, false)
-	c.AddItem(c.LanguageList, 0, 1, false)
-	c.AddItem(c.SoundList, 0, 1, true)
+	c.AddItem(c.WordCountList, 0, 1, true).
+		AddItem(c.LanguageList, 0, 1, true).
+		AddItem(c.SoundList, 0, 1, true)
 
 	c.SetBorder(true)
 	c.SetTitle("Configuration")
