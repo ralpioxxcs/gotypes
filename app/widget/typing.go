@@ -54,8 +54,52 @@ func (w *TypingWidget) ApplyColor(p palette) {
 	w.Input.SetBorderColor(p.border)
 }
 
+func (w *TypingWidget) UpdateWords(number int) {
+	// load & display words
+	jsonFile, err := os.Open("data/test.json")
+	if err != nil {
+		panic(err)
+	}
+	defer jsonFile.Close()
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+
+	var allWords languages
+	json.Unmarshal(byteValue, &allWords)
+
+	// shuffle words
+	rand.Seed(time.Now().UnixNano())
+	rand.Shuffle(len(allWords.English), func(i, j int) {
+		allWords.English[i], allWords.English[j] =
+			allWords.English[j], allWords.English[i]
+	})
+	rand.Shuffle(len(allWords.English1000), func(i, j int) {
+		allWords.English1000[i], allWords.English1000[j] =
+			allWords.English1000[j], allWords.English1000[i]
+	})
+	rand.Shuffle(len(allWords.Korean), func(i, j int) {
+		allWords.Korean[i], allWords.Korean[j] =
+			allWords.Korean[j], allWords.Korean[i]
+	})
+	w.Words.English = make([]string, number)
+	w.Words.English1000 = make([]string, number)
+	w.Words.Korean = make([]string, number)
+	copy(w.Words.English, allWords.English)
+	copy(w.Words.English1000, allWords.English1000)
+	copy(w.Words.Korean, allWords.Korean)
+
+	w.DisplayWords = w.Words.CopyTo()
+
+	var wordlines string
+	for i := 0; i < w.count; i++ {
+		wordlines = wordlines + " " + w.DisplayWords.English[i]
+	}
+	w.Text.SetText("\n\n\n\n\n" + wordlines)
+	w.Text.SetTextAlign(tview.AlignCenter)
+
+}
+
 // Update updates word list whether it is correct or not
-//
 func (w *TypingWidget) Update(colored string, index int) {
 	w.DisplayWords.English[index] = colored
 
@@ -93,8 +137,8 @@ func NewTypingWidget() *TypingWidget {
 	w.Input.SetBorder(true)
 
 	w.SetDirection(tview.FlexRow).
-		AddItem(w.Text, 20, 0, false).
-		AddItem(w.Input, 3, 0, true)
+		AddItem(w.Text, 0, 10, false).
+		AddItem(w.Input, 0, 2, true)
 
 	// load & display words
 	jsonFile, err := os.Open("data/test.json")
@@ -111,13 +155,16 @@ func NewTypingWidget() *TypingWidget {
 	// shuffle words
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(allWords.English), func(i, j int) {
-		allWords.English[i], allWords.English[j] = allWords.English[j], allWords.English[i]
+		allWords.English[i], allWords.English[j] =
+			allWords.English[j], allWords.English[i]
 	})
 	rand.Shuffle(len(allWords.English1000), func(i, j int) {
-		allWords.English1000[i], allWords.English1000[j] = allWords.English1000[j], allWords.English1000[i]
+		allWords.English1000[i], allWords.English1000[j] =
+			allWords.English1000[j], allWords.English1000[i]
 	})
 	rand.Shuffle(len(allWords.Korean), func(i, j int) {
-		allWords.Korean[i], allWords.Korean[j] = allWords.Korean[j], allWords.Korean[i]
+		allWords.Korean[i], allWords.Korean[j] =
+			allWords.Korean[j], allWords.Korean[i]
 	})
 	w.Words.English = make([]string, w.count)
 	w.Words.English1000 = make([]string, w.count)

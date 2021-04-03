@@ -186,7 +186,7 @@ func t8008() palette {
 // Nautilus returns gmk nautilus theme colour code
 func Nautilus() palette {
 	return palette{
-		name:       "nautilus",
+		name:       "Nautilus",
 		title:      tcell.GetColor("#ebb723"),
 		background: tcell.GetColor("#132237"),
 		foreground: tcell.GetColor("#1cbaac"),

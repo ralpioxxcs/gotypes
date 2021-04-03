@@ -11,10 +11,11 @@ import (
 
 /*
  * App is entire tui struct including tview flex struct
- * it consists of each widgets (side-bar, body, status)
- * - side-bar : it lists color themes
- * - body : display words and current carrot interactively
- * - status : it shows current status such as wpm, time ..
+ * it consists of each widgets (sidebar, typing, status, config)
+ * - sidebar : it lists color themes
+ * - typing  : display words and current carrot interactively
+ * - status  : it shows current status such as wpm, time ..
+ * - config  : configurate several options such as word count, languages ..
  */
 type App struct {
 	*tview.Application
@@ -67,8 +68,6 @@ func (a *App) menuAction(action widget.MenuAction) {
 	}
 }
 
-//func (a *App) inputCapture(event *tcell.EventKey) *tcell.EventKey {
-
 // Reset state
 func (a *App) Reset() {
 	//a.statusWidget.Init()
@@ -95,9 +94,16 @@ func NewApp() *App {
 		a.SetFocus(a.typingWidget.Input)
 		return event
 	})
+
+	a.configWidget.WordCountList.SetSelectedFunc(func(text string, index int) {
+		if text == "30" {
+			//cnt, _ := a.configWidget.WordCountList.GetCurrentOption()
+			a.typingWidget.UpdateWords(30)
+		}
+	})
 	a.configWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyTab {
-			a.SetFocus(a.configWidget.SoundList)
+			a.SetFocus(a.configWidget.GetNextOption())
 		}
 		return event
 	})
@@ -119,8 +125,8 @@ func NewApp() *App {
 		AddItem(tview.NewFlex().SetDirection(tview.FlexRow).
 			AddItem(a.typingWidget, 0, 5, true).
 			AddItem(a.blank, 0, 5, false).
-			AddItem(a.statusWidget, 0, 3, false).
-			AddItem(a.configWidget, 0, 3, true), 0, 10, true)
+			AddItem(a.statusWidget, 0, 2, false).
+			AddItem(a.configWidget, 0, 2, false), 0, 10, true)
 	a.menuAction(widget.MenuActionImportTheme)
 
 	a.SetRoot(a.flex, true)
