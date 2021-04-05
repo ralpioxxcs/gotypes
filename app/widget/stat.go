@@ -72,6 +72,16 @@ func (t *StatusWidget) ApplyColor(p palette) {
 	t.SetBorderColor(p.border)
 }
 
+func (t *StatusWidget) Reset() {
+	t.Status.Entries = 0
+	t.Status.WrongEntries = 0
+	t.Status.Words = nil
+	t.Status.wpm = 0
+	t.Status.accuracy = 0
+	t.Status.count = 0
+	t.start = false
+}
+
 // Init initialize string slice of status widget
 func (w *StatusWidget) Init(words []string) {
 	if w.Status.StartTime.IsZero() {

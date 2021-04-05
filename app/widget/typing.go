@@ -54,6 +54,18 @@ func (w *TypingWidget) ApplyColor(p palette) {
 	w.Input.SetBorderColor(p.border)
 }
 
+func (w *TypingWidget) Reset() {
+	w.Text.SetText("")
+	w.Input.SetText("")
+	w.Words.English = nil
+	w.Words.English1000 = nil
+	w.Words.Korean = nil
+	w.DisplayWords.English = nil
+	w.DisplayWords.English1000 = nil
+	w.DisplayWords.Korean = nil
+	w.count = 0
+}
+
 func (w *TypingWidget) UpdateWords(number int) {
 	// load & display words
 	jsonFile, err := os.Open("data/test.json")

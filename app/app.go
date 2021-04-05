@@ -25,6 +25,7 @@ type App struct {
 	typingWidget  *widget.TypingWidget
 	statusWidget  *widget.StatusWidget
 	configWidget  *widget.ConfigWidget
+	quit          chan bool
 }
 
 func (a *App) Draw(screen tcell.Screen) {
@@ -70,7 +71,9 @@ func (a *App) menuAction(action widget.MenuAction) {
 
 // Reset state
 func (a *App) Reset() {
-	//a.statusWidget.Init()
+	//a.statusWidget.Reset()
+	//a.typingWidget.Reset()
+	a.quit <- true
 }
 
 // NewApp returns initialized App struct
@@ -97,7 +100,7 @@ func NewApp() *App {
 
 	a.configWidget.WordCountList.SetSelectedFunc(func(text string, index int) {
 		if text == "30" {
-			//cnt, _ := a.configWidget.WordCountList.GetCurrentOption()
+			a.Reset()
 			a.typingWidget.UpdateWords(30)
 		}
 	})
@@ -160,22 +163,22 @@ func startTyping(text string) {
 	* store start time & elapsed
 	* compare current words with indicating words
 	 */
+	Core.quit = make(chan bool)
 	if !Core.statusWidget.IsStarted() {
 		Core.statusWidget.Init(Core.typingWidget.Words.English)
-
 		go func() {
-			// set AFK timeout (60 seconds) & update status widget each 100 miliseconds tick
 			timeout := time.After(60 * time.Second)
+			// set AFK timeout (60 seconds) & update status widget each 50 miliseconds tick
 			ticker := time.NewTicker(time.Millisecond * 50)
 			for range ticker.C {
 				select {
 				case <-timeout:
 					return
+				case <-Core.quit:
+					return
 				default:
-					// Update text status widget
+					// Update status widget
 					Core.QueueUpdateDraw(func() {
-						//Core.statusWidget.Wpm.
-						//  SetText(fmt.Sprintf("Wpm : %.0f", Core.statusWidget.GetNetWpm()))
 						Core.statusWidget.Wpm.
 							SetText(fmt.Sprintf("Wpm : %.0f", Core.statusWidget.GetGrossWpm()))
 						Core.statusWidget.Accuracy.
