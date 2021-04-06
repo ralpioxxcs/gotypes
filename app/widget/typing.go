@@ -55,8 +55,6 @@ func (w *TypingWidget) ApplyColor(p palette) {
 }
 
 func (w *TypingWidget) Reset() {
-	w.Text.SetText("")
-	w.Input.SetText("")
 	w.Words.English = nil
 	w.Words.English1000 = nil
 	w.Words.Korean = nil
@@ -67,6 +65,9 @@ func (w *TypingWidget) Reset() {
 }
 
 func (w *TypingWidget) UpdateWords(number int) {
+	w.ClearInputBox()
+	w.count = number
+
 	// load & display words
 	jsonFile, err := os.Open("data/test.json")
 	if err != nil {
@@ -133,7 +134,7 @@ func NewTypingWidget() *TypingWidget {
 		Flex:  tview.NewFlex(),
 		Text:  tview.NewTextView(),
 		Input: tview.NewInputField(),
-		count: 20,
+		count: 15,
 	}
 
 	w.Text.SetBorder(true)
@@ -152,47 +153,7 @@ func NewTypingWidget() *TypingWidget {
 		AddItem(w.Text, 0, 10, false).
 		AddItem(w.Input, 0, 2, true)
 
-	// load & display words
-	jsonFile, err := os.Open("data/test.json")
-	if err != nil {
-		panic(err)
-	}
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	var allWords languages
-	json.Unmarshal(byteValue, &allWords)
-
-	// shuffle words
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(allWords.English), func(i, j int) {
-		allWords.English[i], allWords.English[j] =
-			allWords.English[j], allWords.English[i]
-	})
-	rand.Shuffle(len(allWords.English1000), func(i, j int) {
-		allWords.English1000[i], allWords.English1000[j] =
-			allWords.English1000[j], allWords.English1000[i]
-	})
-	rand.Shuffle(len(allWords.Korean), func(i, j int) {
-		allWords.Korean[i], allWords.Korean[j] =
-			allWords.Korean[j], allWords.Korean[i]
-	})
-	w.Words.English = make([]string, w.count)
-	w.Words.English1000 = make([]string, w.count)
-	w.Words.Korean = make([]string, w.count)
-	copy(w.Words.English, allWords.English)
-	copy(w.Words.English1000, allWords.English1000)
-	copy(w.Words.Korean, allWords.Korean)
-
-	w.DisplayWords = w.Words.CopyTo()
-
-	var wordlines string
-	for i := 0; i < w.count; i++ {
-		wordlines = wordlines + " " + w.DisplayWords.English[i]
-	}
-	w.Text.SetText("\n\n\n\n\n" + wordlines)
-	w.Text.SetTextAlign(tview.AlignCenter)
+	w.UpdateWords(w.count)
 
 	return w
 }

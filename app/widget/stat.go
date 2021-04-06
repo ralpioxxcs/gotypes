@@ -73,12 +73,17 @@ func (t *StatusWidget) ApplyColor(p palette) {
 }
 
 func (t *StatusWidget) Reset() {
+	t.Wpm.SetText("Wpm : ")
+	t.Accuracy.SetText("Accuracy : ")
+	t.Timer.SetText("Time : ")
+	t.Count.SetText("Count : ")
 	t.Status.Entries = 0
 	t.Status.WrongEntries = 0
+	t.Status.StartTime = time.Time{}
 	t.Status.Words = nil
 	t.Status.wpm = 0
 	t.Status.accuracy = 0
-	t.Status.count = 0
+	t.Status.count = 1
 	t.start = false
 }
 

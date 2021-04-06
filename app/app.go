@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gdamore/tcell/v2"
@@ -25,7 +26,9 @@ type App struct {
 	typingWidget  *widget.TypingWidget
 	statusWidget  *widget.StatusWidget
 	configWidget  *widget.ConfigWidget
-	quit          chan bool
+	typingStarted bool
+	quitLoop      chan bool
+	Loopfinished  chan bool
 }
 
 func (a *App) Draw(screen tcell.Screen) {
@@ -71,9 +74,16 @@ func (a *App) menuAction(action widget.MenuAction) {
 
 // Reset state
 func (a *App) Reset() {
-	//a.statusWidget.Reset()
-	//a.typingWidget.Reset()
-	a.quit <- true
+	if a.typingStarted == true {
+		a.quitLoop <- true
+		<-a.Loopfinished
+
+		a.statusWidget.Reset()
+		///a.typingWidget.Reset()
+		a.typingStarted = false
+
+		//close(a.Loopfinished)
+	}
 }
 
 // NewApp returns initialized App struct
@@ -86,23 +96,28 @@ func NewApp() *App {
 		typingWidget:  widget.NewTypingWidget(),
 		statusWidget:  widget.NewStatusWidget(),
 		configWidget:  widget.NewConfigWidget(),
+		typingStarted: false,
+		quitLoop:      make(chan bool),
+		Loopfinished:  make(chan bool),
 	}
 
 	// set function to side-bar widget
 	a.sidebarWidget.SetActionFunc(a.menuAction)
-
 	// config callback functions of typing widget
 	// -> set focus to typing widget first time
 	a.typingWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		a.SetFocus(a.typingWidget.Input)
 		return event
 	})
-
+	// set callback functions of config widget
 	a.configWidget.WordCountList.SetSelectedFunc(func(text string, index int) {
-		if text == "30" {
-			a.Reset()
-			a.typingWidget.UpdateWords(30)
-		}
+		num, _ := strconv.Atoi(text)
+		a.Reset()
+		a.typingWidget.UpdateWords(num)
+	})
+	a.configWidget.LanguageList.SetSelectedFunc(func(text string, index int) {
+	})
+	a.configWidget.SoundList.SetSelectedFunc(func(text string, index int) {
 	})
 	a.configWidget.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyTab {
@@ -110,14 +125,11 @@ func NewApp() *App {
 		}
 		return event
 	})
-
-	// -> realtime typing process callback
+	// set callback functions of typing widget
+	// -> realtime typing
 	a.typingWidget.Input.SetChangedFunc(startTyping)
 	// -> SetDoneFunc sets a handler which is called when the user is done entering text.
 	a.typingWidget.Input.SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyBackspace {
-			//a.statusWidget.Status.Words.Iswrong[a.statusWidget.Status.Entries+1] = false
-		}
 		if key == tcell.KeyTab {
 			a.Reset()
 		}
@@ -148,7 +160,6 @@ func NewApp() *App {
 		})
 
 	Core = a
-
 	return a
 }
 
@@ -163,8 +174,9 @@ func startTyping(text string) {
 	* store start time & elapsed
 	* compare current words with indicating words
 	 */
-	Core.quit = make(chan bool)
-	if !Core.statusWidget.IsStarted() {
+
+	if Core.typingStarted == false {
+		Core.typingStarted = true
 		Core.statusWidget.Init(Core.typingWidget.Words.English)
 		go func() {
 			timeout := time.After(60 * time.Second)
@@ -174,7 +186,8 @@ func startTyping(text string) {
 				select {
 				case <-timeout:
 					return
-				case <-Core.quit:
+				case <-Core.quitLoop:
+					Core.Loopfinished <- true
 					return
 				default:
 					// Update status widget
@@ -192,6 +205,7 @@ func startTyping(text string) {
 			}
 		}()
 	}
+
 	// check to pass next word
 	if (len(Core.statusWidget.Status.GetCurrentWord().Text)) < len(text) {
 		runes := []rune(text)
