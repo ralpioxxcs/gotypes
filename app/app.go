@@ -73,16 +73,20 @@ func (a *App) menuAction(action widget.MenuAction) {
 }
 
 // Reset state
-func (a *App) Reset() {
+func (a *App) Reset(num int) {
 	if a.typingStarted == true {
 		a.quitLoop <- true
 		<-a.Loopfinished
 
-		a.statusWidget.Reset()
-		///a.typingWidget.Reset()
 		a.typingStarted = false
+		a.typingWidget.Input.SetChangedFunc(func(text string) {})
+		//a.typingWidget.ClearInputBox()
 
-		//close(a.Loopfinished)
+		a.statusWidget.Reset()
+		a.typingWidget.Reset()
+
+		a.typingWidget.UpdateWords(num)
+		a.typingWidget.Input.SetChangedFunc(startTyping)
 	}
 }
 
@@ -112,8 +116,7 @@ func NewApp() *App {
 	// set callback functions of config widget
 	a.configWidget.WordCountList.SetSelectedFunc(func(text string, index int) {
 		num, _ := strconv.Atoi(text)
-		a.Reset()
-		a.typingWidget.UpdateWords(num)
+		a.Reset(num)
 	})
 	a.configWidget.LanguageList.SetSelectedFunc(func(text string, index int) {
 	})
@@ -131,7 +134,9 @@ func NewApp() *App {
 	// -> SetDoneFunc sets a handler which is called when the user is done entering text.
 	a.typingWidget.Input.SetDoneFunc(func(key tcell.Key) {
 		if key == tcell.KeyTab {
-			a.Reset()
+			_, text := a.configWidget.WordCountList.GetCurrentOption()
+			num, _ := strconv.Atoi(text)
+			a.Reset(num)
 		}
 	})
 
@@ -160,12 +165,15 @@ func NewApp() *App {
 		})
 
 	Core = a
+
 	return a
 }
 
 // App instance handler
 var Core *App
 var popup *tview.Modal
+
+var cntt int
 
 // startTyping process typing functions
 // * text : current text
@@ -207,30 +215,23 @@ func startTyping(text string) {
 	}
 
 	// check to pass next word
-	if (len(Core.statusWidget.Status.GetCurrentWord().Text)) < len(text) {
-		runes := []rune(text)
-		if runes[len(text)-1] == ' ' { // check whitespace
-			Core.statusWidget.Status.AddCount()
-			Core.typingWidget.ClearInputBox()
+	if Core.typingStarted == true {
+		if (len(Core.statusWidget.Status.GetCurrentWord().Text)) < len(text) {
+			runes := []rune(text)
+			if runes[len(text)-1] == ' ' { // check whitespace
+				Core.statusWidget.Status.AddCount()
+				Core.typingWidget.ClearInputBox()
+			}
+			return
+			//Core.SetRoot(popup, false).SetFocus(popup).Run()
 		}
-		return
-		//Core.SetRoot(popup, false).SetFocus(popup).Run()
-	}
 
-	// compare typingWidget word with target word & coloring , underlining
-	palette := Core.sidebarWidget.Theme[Core.sidebarWidget.GetCurrentTheme()]
-	_, _, fg, _, err := palette.ToHexString()
+		// compare typingWidget word with target word & coloring , underlining
+		palette := Core.sidebarWidget.Theme[Core.sidebarWidget.GetCurrentTheme()]
+		_, _, fg, _, err := palette.ToHexString()
 
-	Core.typingWidget.Update(
-		diff(text, Core.statusWidget.Status.GetCurrentWord(), fg, err), Core.statusWidget.GetCount()-1)
-}
-
-// diffText handles each event keys
-func diffText(key tcell.Key) {
-	if key == tcell.KeyEnter {
-		Logger.Println("enter")
-	} else if key == tcell.KeyBackspace {
-		Logger.Println("backspace")
+		Core.typingWidget.Update(
+			diff(text, Core.statusWidget.Status.GetCurrentWord(), fg, err), Core.statusWidget.GetCount()-1)
 	}
 }
 

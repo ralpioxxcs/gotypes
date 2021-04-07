@@ -61,6 +61,7 @@ func (w *TypingWidget) Reset() {
 	w.DisplayWords.English = nil
 	w.DisplayWords.English1000 = nil
 	w.DisplayWords.Korean = nil
+	//w.Input.SetChangedFunc(func(text string) {})
 	w.count = 0
 }
 
