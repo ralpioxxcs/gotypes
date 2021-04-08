@@ -80,7 +80,6 @@ func (a *App) Reset(num int) {
 
 		a.typingStarted = false
 		a.typingWidget.Input.SetChangedFunc(func(text string) {})
-		//a.typingWidget.ClearInputBox()
 
 		a.statusWidget.Reset()
 		a.typingWidget.Reset()
@@ -152,18 +151,6 @@ func NewApp() *App {
 	a.SetRoot(a.flex, true)
 	a.EnableMouse(true)
 
-	// config modal popup
-	popup = tview.NewModal().
-		SetText("Do you want replay?").
-		AddButtons([]string{"Yes", "Cancel"}).
-		SetBackgroundColor(tcell.ColorDefault).
-		SetDoneFunc(func(buttonIndex int, buttonLabel string) {
-			if buttonLabel == "Yes" {
-				a.Stop()
-			} else {
-			}
-		})
-
 	Core = a
 
 	return a
@@ -171,9 +158,6 @@ func NewApp() *App {
 
 // App instance handler
 var Core *App
-var popup *tview.Modal
-
-var cntt int
 
 // startTyping process typing functions
 // * text : current text
@@ -219,13 +203,31 @@ func startTyping(text string) {
 		if (len(Core.statusWidget.Status.GetCurrentWord().Text)) < len(text) {
 			runes := []rune(text)
 			if runes[len(text)-1] == ' ' { // check whitespace
+				if len(Core.statusWidget.Status.Words) == Core.statusWidget.GetCount() {
+					popup := tview.NewModal().
+						SetText(fmt.Sprintf("# WPM : %.0f\n# ACCURACY : %.0f\n-> Do you want replay?",
+							Core.statusWidget.GetGrossWpm(), Core.statusWidget.GetAccuracy())).
+						AddButtons([]string{"Yes", "No"}).
+						SetBackgroundColor(tcell.ColorDefault).
+						SetDoneFunc(func(buttonIndex int, buttonLabel string) {
+							if buttonLabel == "Yes" {
+								_, text := Core.configWidget.WordCountList.GetCurrentOption()
+								num, _ := strconv.Atoi(text)
+								Core.Reset(num)
+							} else {
+								Core.Stop()
+							}
+						})
+					if err := Core.SetRoot(popup, false).SetFocus(popup).EnableMouse(true).Run(); err != nil {
+						panic(err)
+					}
+					return
+				}
 				Core.statusWidget.Status.AddCount()
 				Core.typingWidget.ClearInputBox()
 			}
 			return
-			//Core.SetRoot(popup, false).SetFocus(popup).Run()
 		}
-
 		// compare typingWidget word with target word & coloring , underlining
 		palette := Core.sidebarWidget.Theme[Core.sidebarWidget.GetCurrentTheme()]
 		_, _, fg, _, err := palette.ToHexString()
