@@ -81,7 +81,7 @@ func NewConfigWidget() *ConfigWidget {
 	c.SoundList.SetLabel("# Sound : ").
 		SetOptions([]string{"off", "on"}, nil)
 
-	c.WordCountList.SetCurrentOption(0)
+	c.WordCountList.SetCurrentOption(2)
 	c.LanguageList.SetCurrentOption(0)
 	c.SoundList.SetCurrentOption(0)
 

@@ -2,11 +2,13 @@ package widget
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -37,6 +39,7 @@ type TypingWidget struct {
 	Input        *tview.InputField
 	Words        languages
 	DisplayWords languages
+	CurrentIndex int
 	count        int
 }
 
@@ -61,7 +64,7 @@ func (w *TypingWidget) Reset() {
 	w.DisplayWords.English = nil
 	w.DisplayWords.English1000 = nil
 	w.DisplayWords.Korean = nil
-	//w.Input.SetChangedFunc(func(text string) {})
+	w.CurrentIndex = 1
 	w.count = 0
 }
 
@@ -106,11 +109,15 @@ func (w *TypingWidget) UpdateWords(number int) {
 
 	var wordlines string
 	for i := 0; i < w.count; i++ {
-		wordlines = wordlines + " " + w.DisplayWords.English[i]
+		word := fmt.Sprintf(`["%d"]%s[""]`, i, w.DisplayWords.English[i])
+		if i != 0 {
+			wordlines = wordlines + "\n" + word
+		} else {
+			wordlines = word
+		}
 	}
-	w.Text.SetText("\n\n\n\n\n" + wordlines)
+	w.Text.SetText(wordlines)
 	w.Text.SetTextAlign(tview.AlignCenter)
-
 }
 
 // Update updates word list whether it is correct or not
@@ -119,11 +126,19 @@ func (w *TypingWidget) Update(colored string, index int) {
 
 	var wordlines string
 	for i := 0; i < w.count; i++ {
-		wordlines = wordlines + " " + w.DisplayWords.English[i]
+		word := fmt.Sprintf(`["%d"]%s[""]`, i, w.DisplayWords.English[i])
+		if i != 0 {
+			wordlines = wordlines + "\n" + word
+		} else {
+			wordlines = word
+		}
 	}
-
-	w.Text.SetText("\n\n\n\n\n" + wordlines)
+	w.Text.SetText(wordlines)
 	w.Text.SetTextAlign(tview.AlignCenter)
+}
+
+func (w *TypingWidget) ProcessNextWord() {
+	w.Text.Highlight(strconv.Itoa(w.CurrentIndex)).ScrollToHighlight()
 }
 
 func (w *TypingWidget) ClearInputBox() {
@@ -132,13 +147,16 @@ func (w *TypingWidget) ClearInputBox() {
 
 func NewTypingWidget() *TypingWidget {
 	w := &TypingWidget{
-		Flex:  tview.NewFlex(),
-		Text:  tview.NewTextView(),
-		Input: tview.NewInputField(),
-		count: 15,
+		Flex:         tview.NewFlex(),
+		Text:         tview.NewTextView(),
+		Input:        tview.NewInputField(),
+		CurrentIndex: 1,
+		count:        60,
 	}
 
 	w.Text.SetBorder(true)
+	w.Text.SetRegions(true)
+	w.Text.SetScrollable(true)
 	w.Text.SetDynamicColors(true)
 
 	w.Input.
@@ -151,8 +169,8 @@ func NewTypingWidget() *TypingWidget {
 	w.Input.SetBorder(true)
 
 	w.SetDirection(tview.FlexRow).
-		AddItem(w.Text, 0, 10, false).
-		AddItem(w.Input, 0, 2, true)
+		AddItem(w.Text, 0, 6, false).
+		AddItem(w.Input, 0, 1, true)
 
 	w.UpdateWords(w.count)
 
