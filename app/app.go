@@ -166,7 +166,6 @@ func startTyping(text string) {
 	* store start time & elapsed
 	* compare current words with indicating words
 	 */
-
 	if Core.typingStarted == false {
 		Core.typingStarted = true
 		Core.statusWidget.Init(Core.typingWidget.Words.English)
@@ -224,6 +223,7 @@ func startTyping(text string) {
 					return
 				}
 				Core.statusWidget.Status.AddCount()
+				Core.typingWidget.ProcessNextWord()
 				Core.typingWidget.ClearInputBox()
 			}
 			return
@@ -234,6 +234,7 @@ func startTyping(text string) {
 
 		Core.typingWidget.Update(
 			diff(text, Core.statusWidget.Status.GetCurrentWord(), fg, err), Core.statusWidget.GetCount()-1)
+		Core.typingWidget.CurrentIndex = Core.statusWidget.GetCount()
 	}
 }
 
