@@ -70,7 +70,7 @@ func (w *TypingWidget) UpdateWords(number int) {
 	w.count = number
 
 	// load & display words
-	jsonFile, err := os.Open("data/test.json")
+	jsonFile, err := os.Open("data/words.json")
 	if err != nil {
 		panic(err)
 	}
