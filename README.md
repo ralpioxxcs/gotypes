@@ -24,6 +24,11 @@ each widgets are clickable and select widget which you want.
 In configuration widget, use <kbd>tab</kbd> key to manipulate each config.  
 (full screen is recommended)
 
+## Docker
+```
+docker run -it --rm -e "TERM=xterm-256color" placket/gotypes:latest
+```
+
 ## Dependencies
 * https://github.com/rivo/tview
 
