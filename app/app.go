@@ -3,6 +3,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"math"
 	"math/rand/v2"
@@ -15,7 +16,6 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/ralpioxxcs/gotypes/data"
 	"github.com/ralpioxxcs/gotypes/internal/engine"
-	"github.com/rivo/tview"
 )
 
 // mode is a words/time test, or one quote of a length class; restart turns a
@@ -141,7 +141,7 @@ func themeIndex(name string) int {
 }
 
 type ui struct {
-	app        *tview.Application
+	quit       bool
 	lists      map[string][]string // words per language
 	langs      []string            // sorted keys of lists
 	quotes     map[string][]quote  // per language; may be missing
@@ -329,7 +329,7 @@ func (u *ui) moveSel(d int) {
 
 func (u *ui) key(ev *tcell.EventKey) {
 	if ev.Key() == tcell.KeyCtrlC {
-		u.app.Stop()
+		u.quit = true
 		return
 	}
 	if u.menuOpen {
@@ -359,56 +359,88 @@ func (u *ui) key(ev *tcell.EventKey) {
 	u.recordFinish()
 }
 
-func (u *ui) mouse(ev *tcell.EventMouse, a tview.MouseAction) (*tcell.EventMouse, tview.MouseAction) {
+func (u *ui) mouse(ev *tcell.EventMouse) {
 	g := u.chart
-	if a == tview.MouseMove && u.e.Finished && !u.menuOpen && g.n > 0 {
+	if u.e.Finished && !u.menuOpen && g.n > 0 {
 		x, y := ev.Position()
 		if y >= g.y-1 && y <= g.y+g.h+1 && x >= g.x && x < g.x+g.dw/2 {
 			u.sel = g.second(x)
 		}
 	}
-	return nil, 0
 }
 
-// Run starts the app and blocks until it quits.
+// Run plays on this process's terminal until the user quits.
 func Run() {
-	u := &ui{app: tview.NewApplication(), dir: storeDir()}
-	// embedded at build time, so only a broken build panics here
-	if err := json.Unmarshal(data.Words, &u.lists); err != nil {
+	s, err := tcell.NewScreen()
+	if err == nil {
+		err = Play(context.Background(), s, storeDir())
+	}
+	if err != nil {
 		panic(err)
 	}
+}
+
+// Play runs one session on screen until the user quits or ctx ends, keeping
+// settings and history in dir ("" = don't save). It owns the screen (Init/Fini).
+func Play(ctx context.Context, s tcell.Screen, dir string) error {
+	u := &ui{dir: dir}
+	// embedded at build time, so only a broken build fails here
+	if err := json.Unmarshal(data.Words, &u.lists); err != nil {
+		return err
+	}
 	if err := json.Unmarshal(data.Quotes, &u.quotes); err != nil {
-		panic(err)
+		return err
 	}
 	for l := range u.lists {
 		u.langs = append(u.langs, l)
 	}
 	slices.Sort(u.langs)
 
-	s := loadSettings(u.dir)
-	u.mode = modeIndex(s.Mode)
-	u.theme = themeIndex(s.Theme)
-	u.tape, u.lang = s.Tape, s.Lang
+	st := loadSettings(u.dir)
+	u.mode = modeIndex(st.Mode)
+	u.theme = themeIndex(st.Theme)
+	u.tape, u.lang = st.Tape, st.Lang
 	if _, ok := u.lists[u.lang]; !ok {
 		u.lang = "english"
 	}
 	u.best = loadBest(u.dir)
 	u.restart()
 
-	root := tview.NewBox().SetDrawFunc(func(s tcell.Screen, x, y, w, h int) (int, int, int, int) {
-		u.draw(s, w, h)
-		return x, y, w, h
-	})
-	u.app.SetInputCapture(func(ev *tcell.EventKey) *tcell.EventKey { u.key(ev); return nil })
-	u.app.SetMouseCapture(u.mouse)
-	u.app.EnableMouse(true)
-	go func() {
-		// ~30fps: drives the clock, time-mode end and the animations; all state stays on the UI goroutine
-		for now := range time.NewTicker(33 * time.Millisecond).C {
-			u.app.QueueUpdateDraw(func() { u.e.Tick(); u.recordFinish(); u.animate(now) })
-		}
-	}()
-	if err := u.app.SetRoot(root, true).Run(); err != nil {
-		panic(err)
+	if err := s.Init(); err != nil {
+		return err
 	}
+	defer s.Fini()
+	s.EnableMouse(tcell.MouseMotionEvents)
+	events, stop := make(chan tcell.Event, 16), make(chan struct{})
+	defer close(stop)
+	go s.ChannelEvents(events, stop)              // ends on stop or Fini, so nothing leaks per session
+	tick := time.NewTicker(33 * time.Millisecond) // ~30fps: clock, time-mode end, animations
+	defer tick.Stop()
+
+	for !u.quit {
+		select {
+		case <-ctx.Done():
+			return nil
+		case ev, ok := <-events:
+			if !ok {
+				return nil
+			}
+			switch ev := ev.(type) {
+			case *tcell.EventKey:
+				u.key(ev)
+			case *tcell.EventMouse:
+				u.mouse(ev)
+			case *tcell.EventResize:
+				s.Sync()
+			}
+		case now := <-tick.C:
+			u.e.Tick()
+			u.recordFinish()
+			u.animate(now)
+		}
+		w, h := s.Size()
+		u.draw(s, w, h)
+		s.Show()
+	}
+	return nil
 }
