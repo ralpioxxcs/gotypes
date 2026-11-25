@@ -3,13 +3,13 @@ package widget
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gdamore/tcell/v2"
-	"github.com/rivo/tview"
-	"io/ioutil"
 	"math/rand"
-	"os"
 	"strconv"
 	"time"
+
+	"github.com/gdamore/tcell/v2"
+	"github.com/ralpioxxcs/gotypes/data"
+	"github.com/rivo/tview"
 )
 
 // languages contains words each languages
@@ -73,16 +73,10 @@ func (w *TypingWidget) UpdateWords(number int) {
 	w.count = number
 
 	// load & display words
-	jsonFile, err := os.Open("data/words.json")
-	if err != nil {
+	var allWords languages
+	if err := json.Unmarshal(data.Words, &allWords); err != nil {
 		panic(err)
 	}
-	defer jsonFile.Close()
-
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-
-	var allWords languages
-	json.Unmarshal(byteValue, &allWords)
 
 	// shuffle words
 	rand.Seed(time.Now().UnixNano())

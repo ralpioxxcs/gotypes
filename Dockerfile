@@ -1,22 +1,15 @@
-FROM golang:alpine AS builder
+FROM golang:1.24-alpine AS builder
 
-WORKDIR /go/src/app
+WORKDIR /src
+
+COPY go.mod go.sum ./
+RUN go mod download
 
 COPY . .
-
-RUN ls
-RUN ls data
-
-RUN go mod tidy
-
-RUN go get -u -d -v ./...
-
-RUN go build -a -v -ldflags '-s -w' -o main main.go
+RUN CGO_ENABLED=0 go build -trimpath -ldflags '-s -w' -o /gotypes .
 
 FROM scratch
 
-COPY --from=builder /go/src/app/ go/bin/
+COPY --from=builder /gotypes /gotypes
 
-WORKDIR /go/bin
-
-ENTRYPOINT ["/go/bin/main"]
+ENTRYPOINT ["/gotypes"]

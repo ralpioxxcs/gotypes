@@ -14,12 +14,11 @@ terminal based typing test application using golang inspirated by [monkeytype](h
 
 ## Install
 ```
-$ go get github.com/ralpioxxcs/gotypes
-$ go build
+$ go install github.com/ralpioxxcs/gotypes@latest
 ```
 
 ## Usage
-Just run `go run .` or `gotypes` in source root.  
+Run `gotypes` (or `go run .` in the source root).  
 each widgets are clickable and select widget which you want.  
 In configuration widget, use <kbd>tab</kbd> key to manipulate each config.  
 (full screen is recommended)
