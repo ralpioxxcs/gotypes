@@ -2,6 +2,7 @@ package app
 
 import (
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/gdamore/tcell/v2"
@@ -35,7 +36,23 @@ func TestMenuSearchApplyAndBack(t *testing.T) {
 		t.Fatalf("enter should apply nord and close: open=%v theme=%s", u.menuOpen, themes[u.theme].name)
 	}
 
-	if slices.Contains(categories[0].options(u), "quote") {
+	if slices.ContainsFunc(categories[0].options(u), func(o string) bool { return strings.HasPrefix(o, "quote") }) {
 		t.Fatal("quote offered for a language without quotes")
+	}
+}
+
+func TestQuoteLengths(t *testing.T) {
+	long := strings.Repeat("가나다 ", 90) // 360 chars
+	u := &ui{lang: "korean", lists: map[string][]string{"korean": {"가"}},
+		quotes: map[string][]quote{"korean": {{Text: "티끌 모아 태산."}, {Text: long}}}}
+	u.mode = modeIndex("quote long")
+	u.restart()
+	if u.quote.Text != long || u.e.Mode.N != 90 {
+		t.Fatalf("quote long picked %q (N=%d)", u.quote.Text[:10], u.e.Mode.N)
+	}
+	u.mode = modeIndex("quote medium") // none of that length
+	u.restart()
+	if modes[u.mode].name() != "words 30" {
+		t.Fatalf("missing length should fall back to words 30, got %s", modes[u.mode].name())
 	}
 }

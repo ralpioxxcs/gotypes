@@ -214,42 +214,27 @@ func (c canvas) tape(e *engine.Engine, x, y, width int) (int, int) {
 func (c canvas) modeBar(u *ui, x, y, width int) {
 	xx, kind := x, ""
 	for i, m := range modes {
-		if m == quoteMode && !u.hasQuotes() {
+		if !u.available(m) {
 			continue
+		}
+		if k := m.kind(); k != kind {
+			if kind != "" {
+				xx += 2
+			}
+			kind = k
+			st := c.st(c.th.sub)
+			if modes[u.mode].kind() == k {
+				st = c.st(c.th.text)
+			}
+			xx = c.print(xx, y, k+" ", st)
 		}
 		val := c.st(c.th.sub)
 		if i == u.mode {
 			val = c.st(c.th.main).Bold(true)
 		}
-		if k := modeKind(m); k != kind {
-			if kind != "" {
-				xx += 2
-			}
-			kind = k
-			if m == quoteMode { // no numbers: the label is the value
-				xx = c.print(xx, y, k, val)
-				continue
-			}
-			st := c.st(c.th.sub)
-			if modeKind(modes[u.mode]) == k {
-				st = c.st(c.th.text)
-			}
-			xx = c.print(xx, y, k+" ", st)
-		}
-		xx = c.print(xx, y, fmt.Sprint(m.N)+" ", val)
+		xx = c.print(xx, y, m.value()+" ", val)
 	}
-	right := u.lang + " · " + c.th.name
-	c.print(x+width-runewidth.StringWidth(right), y, right, c.st(c.th.sub))
-}
-
-func modeKind(m engine.Mode) string {
-	switch {
-	case m == quoteMode:
-		return "quote"
-	case m.Time:
-		return "time"
-	}
-	return "words"
+	c.print(x+width-runewidth.StringWidth(u.lang), y, u.lang, c.st(c.th.sub))
 }
 
 func progress(e *engine.Engine) string {

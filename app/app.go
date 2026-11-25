@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/ralpioxxcs/gotypes/data"
@@ -16,26 +17,66 @@ import (
 	"github.com/rivo/tview"
 )
 
-// quoteMode marks the quote entry in modes; restart turns it into "N words" of one quote.
-var quoteMode = engine.Mode{}
-
-var modes = []engine.Mode{
-	{N: 15}, {N: 30}, {N: 60}, {N: 120},
-	{Time: true, N: 15}, {Time: true, N: 30}, {Time: true, N: 60},
-	quoteMode,
+// mode is a words/time test, or one quote of a length class; restart turns a
+// quote into "N words" for the engine.
+type mode struct {
+	engine.Mode
+	quote string // "short" | "medium" | "long", empty for words/time
 }
 
-func modeName(m engine.Mode) string {
-	if m == quoteMode {
+var modes = []mode{
+	{Mode: engine.Mode{N: 15}}, {Mode: engine.Mode{N: 30}}, {Mode: engine.Mode{N: 60}}, {Mode: engine.Mode{N: 120}},
+	{Mode: engine.Mode{Time: true, N: 15}}, {Mode: engine.Mode{Time: true, N: 30}}, {Mode: engine.Mode{Time: true, N: 60}},
+	{quote: "short"}, {quote: "medium"}, {quote: "long"},
+}
+
+func (m mode) kind() string {
+	switch {
+	case m.quote != "":
 		return "quote"
+	case m.Time:
+		return "time"
 	}
-	return modeKind(m) + " " + strconv.Itoa(m.N)
+	return "words"
 }
+
+func (m mode) value() string {
+	if m.quote != "" {
+		return m.quote
+	}
+	return strconv.Itoa(m.N)
+}
+
+func (m mode) name() string { return m.kind() + " " + m.value() }
 
 type quote struct {
 	Text   string `json:"text"`
 	Source string `json:"source"`
 }
+
+// quoteLen classes a quote by characters: short ≤ 60, medium ≤ 250, long beyond.
+func quoteLen(q quote) string {
+	switch n := utf8.RuneCountInString(q.Text); {
+	case n <= 60:
+		return "short"
+	case n <= 250:
+		return "medium"
+	}
+	return "long"
+}
+
+func (u *ui) quotesFor(length string) []quote {
+	var out []quote
+	for _, q := range u.quotes[u.lang] {
+		if quoteLen(q) == length {
+			out = append(out, q)
+		}
+	}
+	return out
+}
+
+// available hides quote lengths the current language has no quotes for.
+func (u *ui) available(m mode) bool { return m.quote == "" || len(u.quotesFor(m.quote)) > 0 }
 
 // category is one entry of the settings menu. Values are labels, so
 // filtering and saving work on the same strings the user sees.
@@ -53,17 +94,14 @@ var categories = []category{
 		func(u *ui) []string {
 			var out []string
 			for _, m := range modes {
-				if m != quoteMode || u.hasQuotes() {
-					out = append(out, modeName(m))
+				if u.available(m) {
+					out = append(out, m.name())
 				}
 			}
 			return out
 		},
-		func(u *ui) string { return modeName(modes[u.mode]) },
-		func(u *ui, v string) {
-			u.mode = slices.IndexFunc(modes, func(m engine.Mode) bool { return modeName(m) == v })
-			u.restart()
-		}},
+		func(u *ui) string { return modes[u.mode].name() },
+		func(u *ui, v string) { u.mode = modeIndex(v); u.restart() }},
 	{"text",
 		func(*ui) []string { return []string{"paragraph", "tape"} },
 		func(u *ui) string {
@@ -87,6 +125,14 @@ var categories = []category{
 		},
 		func(u *ui) string { return themes[u.theme].name },
 		func(u *ui, v string) { u.theme = themeIndex(v) }},
+}
+
+// modeIndex finds a mode by name; unknown names give words 30.
+func modeIndex(name string) int {
+	if i := slices.IndexFunc(modes, func(m mode) bool { return m.name() == name }); i >= 0 {
+		return i
+	}
+	return 1
 }
 
 func themeIndex(name string) int {
@@ -120,24 +166,22 @@ type ui struct {
 	saveErr  error
 }
 
-func (u *ui) hasQuotes() bool { return len(u.quotes[u.lang]) > 0 }
-
 func (u *ui) restart() {
-	if modes[u.mode] == quoteMode && !u.hasQuotes() {
+	if !u.available(modes[u.mode]) {
 		u.mode = 1 // words 30
 	}
 	m := modes[u.mode]
 	words := u.lists[u.lang]
 	next := func() string { return words[rand.IntN(len(words))] }
 	u.quote = quote{}
-	if m == quoteMode {
-		qs := u.quotes[u.lang]
+	if m.quote != "" {
+		qs := u.quotesFor(m.quote)
 		u.quote = qs[rand.IntN(len(qs))]
 		ws := strings.Fields(u.quote.Text)
 		m.N = len(ws)
 		next = func() string { w := ws[0]; ws = ws[1:]; return w }
 	}
-	u.e = engine.New(m, next, time.Now)
+	u.e = engine.New(m.Mode, next, time.Now)
 	u.sel, u.finishedAt, u.pb, u.saveErr = -1, time.Time{}, false, nil
 }
 
@@ -150,7 +194,7 @@ func (u *ui) recordFinish() {
 	}
 	u.finishedAt = time.Now()
 	e := u.e
-	r := record{Time: u.finishedAt, Mode: modeName(modes[u.mode]), Lang: u.lang, WPM: e.WPM(), Raw: e.Raw(),
+	r := record{Time: u.finishedAt, Mode: modes[u.mode].name(), Lang: u.lang, WPM: e.WPM(), Raw: e.Raw(),
 		Acc: e.Accuracy(), Consistency: e.Consistency(), Seconds: e.Elapsed().Seconds()}
 	if u.korean() {
 		r.Taja = e.Taja()
@@ -167,7 +211,7 @@ func (u *ui) recordFinish() {
 func (u *ui) saveSettings() {
 	if u.dir != "" {
 		// shortcut: a failed settings write is dropped silently; only defaults are lost.
-		_ = saveSettings(u.dir, settings{Mode: modeName(modes[u.mode]), Theme: themes[u.theme].name, Tape: u.tape, Lang: u.lang})
+		_ = saveSettings(u.dir, settings{Mode: modes[u.mode].name(), Theme: themes[u.theme].name, Tape: u.tape, Lang: u.lang})
 	}
 }
 
@@ -303,9 +347,7 @@ func Run() {
 	slices.Sort(u.langs)
 
 	s := loadSettings(u.dir)
-	if u.mode = slices.IndexFunc(modes, func(m engine.Mode) bool { return modeName(m) == s.Mode }); u.mode < 0 {
-		u.mode = 1 // words 30
-	}
+	u.mode = modeIndex(s.Mode)
 	u.theme = themeIndex(s.Theme)
 	u.tape, u.lang = s.Tape, s.Lang
 	if _, ok := u.lists[u.lang]; !ok {
