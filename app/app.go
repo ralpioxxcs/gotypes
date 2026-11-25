@@ -322,10 +322,8 @@ func (u *ui) mouse(ev *tcell.EventMouse, a tview.MouseAction) (*tcell.EventMouse
 	g := u.chart
 	if a == tview.MouseMove && u.e.Finished && !u.menuOpen && g.n > 0 {
 		x, y := ev.Position()
-		if y >= g.y-1 && y <= g.y+g.h+1 && x >= g.x {
-			if i := g.start + (x-g.x)/g.colW; i < g.n {
-				u.sel = i
-			}
+		if y >= g.y-1 && y <= g.y+g.h+1 && x >= g.x && x < g.x+g.dw/2 {
+			u.sel = g.second(x)
 		}
 	}
 	return nil, 0

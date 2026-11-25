@@ -244,15 +244,41 @@ func progress(e *engine.Engine) string {
 	return fmt.Sprintf("%d/%d", e.Cur, e.Mode.N)
 }
 
-var blocks = []rune(" ▁▂▃▄▅▆▇█")
+// chartGeom maps screen columns back to seconds for mouse hover.
+type chartGeom struct{ x, y, h, dw, n int }
 
-type chartGeom struct{ x, y, h, colW, start, n int }
+// second is the second drawn nearest to screen column sx.
+func (g chartGeom) second(sx int) int {
+	best := 0
+	for i := range g.n {
+		if abs(g.col(i)-(sx-g.x)) < abs(g.col(best)-(sx-g.x)) {
+			best = i
+		}
+	}
+	return best
+}
 
-// chart draws the per-second result: plot rows y..y+h-1, tooltip at y-1,
-// error marks at y+h, x labels at y+h+1. Columns sweep in after the finish.
+// col is the plot cell (from the left edge) where second i is drawn.
+func (g chartGeom) col(i int) int {
+	if g.n < 2 {
+		return 0
+	}
+	return i * (g.dw - 1) / (g.n - 1) / 2
+}
+
+func abs(v int) int { return max(v, -v) }
+
+// brailleBit is the dot for (column 0-1, row 0-3) inside one braille cell (U+2800 + bits).
+var brailleBit = [2][4]rune{{0x01, 0x02, 0x04, 0x40}, {0x08, 0x10, 0x20, 0x80}}
+
+// chart draws the per-second result as braille line charts (2x4 dots per cell):
+// wpm bright, raw dim. Plot rows y..y+h-1, tooltip at y-1, error marks at y+h,
+// x labels at y+h+1. Lines sweep in left to right after the finish.
 func (c canvas) chart(ps []engine.Second, sel int, since time.Duration, x, y, w, h int) chartGeom {
 	th, n := c.th, len(ps)
-	if n == 0 || h < 2 {
+	const labelW = 4
+	px, pw := x+labelW+1, w-labelW-1
+	if n == 0 || h < 2 || pw < 2 {
 		return chartGeom{}
 	}
 	mx := 20.0
@@ -261,53 +287,117 @@ func (c canvas) chart(ps []engine.Second, sel int, since time.Duration, x, y, w,
 	}
 	mx = math.Ceil(mx/20) * 20
 
-	const labelW = 4
-	px, pw := x+labelW+1, w-labelW-1
-	colW := min(max(pw/n, 1), 4)
-	start := max(0, n-pw/colW)
-	reveal := n
-	if since < 700*time.Millisecond {
-		reveal = int(float64(n)*float64(since)/float64(700*time.Millisecond)) + 1
+	dw, dh := pw*2, h*4
+	xAt := func(i int) int {
+		if n == 1 {
+			return 0
+		}
+		return i * (dw - 1) / (n - 1)
 	}
+	yAt := func(v float64) int { return dh - 1 - int(math.Round(v/mx*float64(dh-1))) }
+	reveal := dw
+	if since < 700*time.Millisecond {
+		reveal = int(float64(dw) * float64(since) / float64(700*time.Millisecond))
+	}
+	done := reveal >= dw
 	if sel < 0 || sel >= n {
 		sel = n - 1
 	}
 
-	sub := c.st(th.sub)
-	c.print(x, y, fmt.Sprintf("%*d", labelW, int(mx)), sub)
-	c.print(x, y+(h-1)/2, fmt.Sprintf("%*d", labelW, int(mx/2)), sub)
-	c.print(x, y+h-1, fmt.Sprintf("%*d", labelW, 0), sub)
-	barCol := blend(th.sub, th.bg, 0.45)
-	bw := colW
-	if colW >= 3 {
-		bw = colW - 1
-	}
-	for i := start; i < min(n, reveal); i++ {
-		cx := px + (i-start)*colW
-		base := tcell.StyleDefault.Background(th.bg)
-		if i == sel && reveal >= n {
-			base = base.Background(th.subAlt)
-			c.fill(cx, y, colW, h, base)
+	// rasterize both series; a cell touched by the wpm line takes the wpm color
+	bits, isWPM := make([]rune, pw*h), make([]bool, pw*h)
+	plot := func(dx, dy int, wpm bool) {
+		if dx < 0 || dx > reveal || dx >= dw || dy < 0 || dy >= dh {
+			return
 		}
-		e8 := int(ps[i].Raw / mx * float64(h*8))
-		for row := 0; row < h; row++ {
-			if e := min(e8-row*8, 8); e > 0 {
-				for k := range bw {
-					c.put(cx+k, y+h-1-row, blocks[e], base.Foreground(barCol))
-				}
+		k := dy/4*pw + dx/2
+		bits[k] |= brailleBit[dx%2][dy%4]
+		isWPM[k] = isWPM[k] || wpm
+	}
+	line := func(x0, y0, x1, y1 int, wpm bool) { // Bresenham
+		ax, ay, sx, sy := abs(x1-x0), -abs(y1-y0), 1, 1
+		if x1 < x0 {
+			sx = -1
+		}
+		if y1 < y0 {
+			sy = -1
+		}
+		for e := ax + ay; ; {
+			plot(x0, y0, wpm)
+			if x0 == x1 && y0 == y1 {
+				return
+			}
+			e2 := 2 * e
+			if e2 >= ay {
+				e, x0 = e+ay, x0+sx
+			}
+			if e2 <= ax {
+				e, y0 = e+ax, y0+sy
 			}
 		}
-		r := int(math.Round(ps[i].WPM / mx * float64(h-1)))
-		c.put(cx+(bw-1)/2, y+h-1-r, '●', base.Foreground(th.main))
-		if ps[i].Errors > 0 {
-			c.put(cx+(bw-1)/2, y+h, '×', c.st(th.err))
+	}
+	for _, wpm := range []bool{false, true} {
+		v := func(i int) float64 {
+			if wpm {
+				return ps[i].WPM
+			}
+			return ps[i].Raw
 		}
-		if i == start || (i+1)%5 == 0 {
-			c.print(cx, y+h+1, fmt.Sprint(i+1), sub)
+		if n == 1 { // a lone point reads better as a level line
+			line(0, yAt(v(0)), dw-1, yAt(v(0)), wpm)
+		}
+		for i := 1; i < n; i++ {
+			line(xAt(i-1), yAt(v(i-1)), xAt(i), yAt(v(i)), wpm)
 		}
 	}
 
-	if reveal >= n {
+	sub := c.st(th.sub)
+	rawCol, gridCol := blend(th.sub, th.bg, 0.35), blend(th.sub, th.bg, 0.75)
+	selCol := xAt(sel) / 2
+	for row := range h {
+		for col := range pw {
+			st := tcell.StyleDefault.Background(th.bg)
+			if done && col == selCol {
+				st = st.Background(th.subAlt)
+			}
+			k := row*pw + col
+			switch {
+			case bits[k] != 0:
+				fg := rawCol
+				if isWPM[k] {
+					fg = th.main
+				}
+				c.put(px+col, y+row, 0x2800+bits[k], st.Foreground(fg))
+			case row == 0 || row == (h-1)/2 || row == h-1:
+				c.put(px+col, y+row, '┈', st.Foreground(gridCol))
+			default:
+				c.put(px+col, y+row, ' ', st)
+			}
+		}
+	}
+
+	c.print(x, y, fmt.Sprintf("%*d", labelW, int(mx)), sub)
+	c.print(x, y+(h-1)/2, fmt.Sprintf("%*d", labelW, int(mx*(1-float64((h-1)/2*4+2)/float64(dh-1)))), sub)
+	c.print(x, y+h-1, fmt.Sprintf("%*d", labelW, 0), sub)
+	step := 5
+	for float64(step)*float64(dw)/float64(max(n-1, 1))/2 < 4 {
+		step *= 2 // keep x labels at least 4 cells apart
+	}
+	lastEnd := -1
+	for i := range n {
+		col := xAt(i) / 2
+		if xAt(i) > reveal {
+			break
+		}
+		if ps[i].Errors > 0 {
+			c.put(px+col, y+h, '×', c.st(th.err))
+		}
+		if (i == 0 || (i+1)%step == 0) && col > lastEnd {
+			lastEnd = c.print(px+col, y+h+1, fmt.Sprint(i+1), sub) - px
+		}
+	}
+
+	if done {
 		s := ps[sel]
 		tx := c.print(px, y-1, fmt.Sprintf("%ds", sel+1), c.st(th.text).Bold(true))
 		tx = c.print(tx+3, y-1, "wpm ", sub)
@@ -317,14 +407,14 @@ func (c canvas) chart(ps []engine.Second, sel int, since time.Duration, x, y, w,
 		tx = c.print(tx+3, y-1, "err ", sub)
 		c.print(tx, y-1, fmt.Sprint(s.Errors), c.st(th.err))
 	}
-	lx := x + w - runewidth.StringWidth("● wpm  ▆ raw  × err")
-	lx = c.print(lx, y-1, "●", c.st(th.main))
+	lx := x + w - runewidth.StringWidth("━ wpm  ━ raw  × err")
+	lx = c.print(lx, y-1, "━", c.st(th.main))
 	lx = c.print(lx, y-1, " wpm  ", sub)
-	lx = c.print(lx, y-1, "▆", c.st(barCol))
+	lx = c.print(lx, y-1, "━", c.st(rawCol))
 	lx = c.print(lx, y-1, " raw  ", sub)
 	lx = c.print(lx, y-1, "×", c.st(th.err))
 	c.print(lx, y-1, " err", sub)
-	return chartGeom{px, y, h, colW, start, n}
+	return chartGeom{px, y, h, dw, n}
 }
 
 func (u *ui) draw(s tcell.Screen, w, h int) {
