@@ -8,9 +8,10 @@ terminal based typing test application using golang inspirated by [monkeytype](h
 ![Screenshot](gotypes.gif)
 
 ## Features
-* [gmk](https://www.gmk-electronic-design.de/en/products/keycaps) keycap themes
-* accuracy
-* live wpm
+* words (15/30/60/120) and time (15/30/60s) modes
+* paragraph or tape (single scrolling line) text
+* result screen: wpm, accuracy, raw, consistency, per-second chart
+* [gmk](https://www.gmk-electronic-design.de/en/products/keycaps) keycap themes plus nord, gruvbox, catppuccin, tokyo night, rose pine, solarized light
 
 ## Install
 ```
@@ -18,10 +19,17 @@ $ go install github.com/ralpioxxcs/gotypes@latest
 ```
 
 ## Usage
-Run `gotypes` (or `go run .` in the source root).  
-each widgets are clickable and select widget which you want.  
-In configuration widget, use <kbd>tab</kbd> key to manipulate each config.  
-(full screen is recommended)
+Run `gotypes` (or `go run .` in the source root) and start typing.
+
+| key | action |
+|---|---|
+| <kbd>tab</kbd> | restart |
+| <kbd>esc</kbd> | menu: mode, text style, theme (themes preview on hover) |
+| <kbd>ctrl</kbd>+<kbd>w</kbd> / <kbd>alt</kbd>+<kbd>backspace</kbd> | delete word |
+| <kbd>←</kbd> <kbd>→</kbd> or mouse | inspect a second on the result chart |
+| <kbd>ctrl</kbd>+<kbd>c</kbd> | quit |
+
+A truecolor terminal is recommended for accurate theme colors.
 
 ## Docker
 ```
