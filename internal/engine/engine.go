@@ -219,18 +219,48 @@ func (e *Engine) perMinute(chars int) float64 {
 	return float64(chars) / 5 / m
 }
 
-// WPM counts only correctly typed words, plus the space after each.
-func (e *Engine) WPM() float64 {
+// correctUnits weighs the chars of correctly typed words, plus 1 per space after each.
+func (e *Engine) correctUnits(weight func(rune) int) int {
 	n := 0
 	for i := 0; i <= e.Cur; i++ {
 		if w := e.Words[i]; w.Correct() {
-			n += len(w.Target)
+			for _, r := range w.Target {
+				n += weight(r)
+			}
 			if i < e.Cur {
 				n++
 			}
 		}
 	}
-	return e.perMinute(n)
+	return n
+}
+
+// WPM counts only correctly typed words, plus the space after each.
+func (e *Engine) WPM() float64 { return e.perMinute(e.correctUnits(func(rune) int { return 1 })) }
+
+// Taja is Korean-style speed (타/분): keystrokes of correctly typed words per minute.
+func (e *Engine) Taja() float64 { return e.perMinute(e.correctUnits(Strokes)) * 5 }
+
+// Strokes is how many keys r takes on a 2-set (두벌식) Korean keyboard; 1 for non-Hangul.
+// Doubled consonants and ㅒ/ㅖ are one shifted key; compound vowels and finals are two.
+func Strokes(r rune) int {
+	if r < 0xAC00 || r > 0xD7A3 {
+		return 1
+	}
+	s := int(r - 0xAC00)
+	n := 2 // initial + vowel
+	switch s % 588 / 28 {
+	case 9, 10, 11, 14, 15, 16, 19: // ㅘㅙㅚㅝㅞㅟㅢ
+		n++
+	}
+	switch s % 28 {
+	case 0:
+	case 3, 5, 6, 9, 10, 11, 12, 13, 14, 15, 18: // ㄳㄵㄶㄺㄻㄼㄽㄾㄿㅀㅄ
+		n += 2
+	default:
+		n++
+	}
+	return n
 }
 
 // Raw counts every keystroke.

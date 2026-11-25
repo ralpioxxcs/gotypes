@@ -137,10 +137,15 @@ func cellsWidth(cs []cell) int {
 	return n
 }
 
-// paragraph draws 3 wrapped lines, keeping the caret on the second line once past the first.
-func (c canvas) paragraph(e *engine.Engine, x, y, width int) {
-	var lines [][][]cell
-	var line [][]cell
+// paragraph draws 3 wrapped lines, keeping the caret on the second line once
+// past the first. Returns the caret position.
+func (c canvas) paragraph(e *engine.Engine, x, y, width int) (cx, cy int) {
+	type placed struct {
+		wi int
+		cs []cell
+	}
+	var lines [][]placed
+	var line []placed
 	used, curLine := 0, 0
 	for wi := range e.Words {
 		cs := wordCells(e, c.th, wi)
@@ -154,23 +159,27 @@ func (c canvas) paragraph(e *engine.Engine, x, y, width int) {
 		if wi > e.Cur && len(lines) > curLine+2 {
 			break // enough lines below the caret
 		}
-		line, used = append(line, cs), used+wd
+		line, used = append(line, placed{wi, cs}), used+wd
 	}
 	lines = append(lines, line)
 	first := max(0, curLine-1)
 	for li := 0; li < 3 && first+li < len(lines); li++ {
 		xx := x
-		for _, cs := range lines[first+li] {
-			for _, ce := range cs {
+		for _, p := range lines[first+li] {
+			if p.wi == e.Cur {
+				cx, cy = xx+cellsWidth(p.cs[:len(e.Words[e.Cur].Typed)]), y+li
+			}
+			for _, ce := range p.cs {
 				xx += c.put(xx, y+li, ce.r, ce.st)
 			}
 		}
 	}
+	return cx, cy
 }
 
 // tape draws one line in [x, x+width): text starts left-aligned, the caret walks
-// to the middle, then stays there while the text scrolls.
-func (c canvas) tape(e *engine.Engine, x, y, width int) {
+// to the middle, then stays there while the text scrolls. Returns the caret position.
+func (c canvas) tape(e *engine.Engine, x, y, width int) (int, int) {
 	var stream []cell
 	caret := 0
 	for wi := max(0, e.Cur-15); wi < len(e.Words) && wi < e.Cur+25; wi++ {
@@ -199,9 +208,10 @@ func (c canvas) tape(e *engine.Engine, x, y, width int) {
 		fg, _, _ := ce.st.Decompose()
 		c.put(xx, y, ce.r, ce.st.Foreground(blend(fg, c.th.bg, math.Min(1, 0.85*float64(cx-xx)/half))))
 	}
+	return cx, y
 }
 
-func (c canvas) modeBar(cur, x, y, width int) {
+func (c canvas) modeBar(cur int, lang string, x, y, width int) {
 	xx, kind := x, ""
 	for i, m := range modes {
 		k := modeKind(m)
@@ -222,7 +232,8 @@ func (c canvas) modeBar(cur, x, y, width int) {
 		}
 		xx = c.print(xx, y, fmt.Sprint(m.N)+" ", st)
 	}
-	c.print(x+width-runewidth.StringWidth(c.th.name), y, c.th.name, c.st(c.th.sub))
+	right := lang + " · " + c.th.name
+	c.print(x+width-runewidth.StringWidth(right), y, right, c.st(c.th.sub))
 }
 
 func modeKind(m engine.Mode) string {
@@ -323,7 +334,7 @@ func (c canvas) chart(ps []engine.Second, sel int, since time.Duration, x, y, w,
 }
 
 func (u *ui) draw(s tcell.Screen, w, h int) {
-	items := menuItems()
+	items := u.menuItems()
 	th := themes[u.theme]
 	if it := items[u.menuIdx]; u.menuOpen && it.kind == itemTheme {
 		th = themes[it.idx] // live preview
@@ -334,31 +345,47 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	x0 := (w - cw) / 2
 	e := u.e
 
+	s.HideCursor()
 	if !e.Finished {
 		y0 := max(1, (h-8)/2)
-		c.modeBar(u.mode, x0, y0, cw)
+		c.modeBar(u.mode, u.lang, x0, y0, cw)
 		if e.Started {
 			c.print(x0, y0+3, progress(e), c.st(th.main).Bold(true))
 		}
+		var cx, cy int
 		if u.tape {
-			c.tape(e, x0, y0+5, cw)
+			cx, cy = c.tape(e, x0, y0+5, cw)
 		} else {
-			c.paragraph(e, x0, y0+5, cw)
+			cx, cy = c.paragraph(e, x0, y0+5, cw)
+		}
+		if u.korean() && !u.menuOpen {
+			s.ShowCursor(cx, cy) // the IME draws its in-progress syllable at the terminal cursor
 		}
 		c.hints(w, h-2, "tab", "restart", "esc", "menu", "ctrl+c", "quit")
 	} else {
-		if u.finishedAt.IsZero() {
-			u.finishedAt = time.Now()
-		}
 		y0 := max(1, (h-24)/2)
-		c.modeBar(u.mode, x0, y0, cw)
-		c.print(x0, y0+3, "wpm", c.st(th.sub))
+		c.modeBar(u.mode, u.lang, x0, y0, cw)
+		label, speed, detail := "wpm", e.WPM(), ""
+		if u.korean() {
+			label, speed, detail = "타/분", e.Taja(), fmt.Sprintf("wpm %.0f   ", e.WPM())
+		}
+		c.print(x0, y0+3, label, c.st(th.sub))
 		c.print(x0+18, y0+3, "acc", c.st(th.sub))
-		c.big(x0, y0+4, fmt.Sprintf("%.0f", e.WPM()), c.st(th.main))
+		c.big(x0, y0+4, fmt.Sprintf("%.0f", speed), c.st(th.main))
 		c.big(x0+18, y0+4, fmt.Sprintf("%.0f%%", e.Accuracy()), c.st(th.main))
 		ok, bad, extra := e.Counts()
-		c.print(x0, y0+10, fmt.Sprintf("raw %.0f   consistency %.0f%%   chars %d/%d/%d   time %.1fs",
+		c.print(x0, y0+10, detail+fmt.Sprintf("raw %.0f   consistency %.0f%%   chars %d/%d/%d   time %.1fs",
 			e.Raw(), e.Consistency(), ok, bad, extra, e.Elapsed().Seconds()), c.st(th.sub))
+		switch {
+		case u.saveErr != nil:
+			c.print(x0, y0+11, "history not saved: "+u.saveErr.Error(), c.st(th.err))
+		case u.pb && u.prevBest > 0:
+			c.print(x0, y0+11, fmt.Sprintf("new personal best (was %.0f)", u.prevBest), c.st(th.main).Bold(true))
+		case u.pb:
+			c.print(x0, y0+11, "new personal best", c.st(th.main).Bold(true))
+		default:
+			c.print(x0, y0+11, fmt.Sprintf("personal best %.0f", u.prevBest), c.st(th.sub))
+		}
 		chH := min(8, h-5-(y0+13)) // room for error row, x labels, hints
 		u.chart = c.chart(e.PerSecond(), u.sel, time.Since(u.finishedAt), x0, y0+13, cw, chH)
 		c.hints(w, h-2, "←/→", "inspect", "tab", "restart", "esc", "menu", "ctrl+c", "quit")

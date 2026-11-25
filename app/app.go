@@ -5,6 +5,7 @@ package app
 import (
 	"encoding/json"
 	"math/rand/v2"
+	"slices"
 	"strconv"
 	"time"
 
@@ -25,6 +26,7 @@ const (
 	itemHeader itemKind = iota
 	itemMode
 	itemText
+	itemLang
 	itemTheme
 )
 
@@ -34,37 +36,82 @@ type menuItem struct {
 	idx   int
 }
 
-func menuItems() []menuItem {
+func (u *ui) menuItems() []menuItem {
 	items := []menuItem{{label: "mode"}}
 	for i, m := range modes {
-		items = append(items, menuItem{modeKind(m) + " " + strconv.Itoa(m.N), itemMode, i})
+		items = append(items, menuItem{modeName(m), itemMode, i})
 	}
 	items = append(items, menuItem{label: "text"},
 		menuItem{"paragraph", itemText, 0}, menuItem{"tape", itemText, 1},
-		menuItem{label: "theme"})
+		menuItem{label: "language"})
+	for i, l := range u.langs {
+		items = append(items, menuItem{l, itemLang, i})
+	}
+	items = append(items, menuItem{label: "theme"})
 	for i, t := range themes {
 		items = append(items, menuItem{t.name, itemTheme, i})
 	}
 	return items
 }
 
+func modeName(m engine.Mode) string { return modeKind(m) + " " + strconv.Itoa(m.N) }
+
 type ui struct {
 	app        *tview.Application
-	words      []string
+	lists      map[string][]string // words per language
+	langs      []string            // sorted keys of lists
 	e          *engine.Engine
 	mode       int // index into modes
 	theme      int
 	tape       bool
+	lang       string
 	menuOpen   bool
 	menuIdx    int
 	sel        int // selected second on the result chart, -1 = last
 	finishedAt time.Time
 	chart      chartGeom // last drawn chart, for mouse hit-testing
+
+	dir      string             // where settings/history live; "" = saving off
+	best     map[string]float64 // best score per mode+language
+	prevBest float64            // best before the shown result
+	pb       bool               // shown result is a new personal best
+	saveErr  error
 }
 
 func (u *ui) restart() {
-	u.e = engine.New(modes[u.mode], func() string { return u.words[rand.IntN(len(u.words))] }, time.Now)
-	u.sel, u.finishedAt = -1, time.Time{}
+	words := u.lists[u.lang]
+	u.e = engine.New(modes[u.mode], func() string { return words[rand.IntN(len(words))] }, time.Now)
+	u.sel, u.finishedAt, u.pb, u.saveErr = -1, time.Time{}, false, nil
+}
+
+func (u *ui) korean() bool { return u.lang == "korean" }
+
+// recordFinish runs once per finished test: PB check and history append.
+func (u *ui) recordFinish() {
+	if !u.e.Finished || !u.finishedAt.IsZero() {
+		return
+	}
+	u.finishedAt = time.Now()
+	e := u.e
+	r := record{Time: u.finishedAt, Mode: modeName(e.Mode), Lang: u.lang, WPM: e.WPM(), Raw: e.Raw(),
+		Acc: e.Accuracy(), Consistency: e.Consistency(), Seconds: e.Elapsed().Seconds()}
+	if u.korean() {
+		r.Taja = e.Taja()
+	}
+	u.prevBest = u.best[r.key()]
+	if u.pb = r.score() > u.prevBest; u.pb {
+		u.best[r.key()] = r.score()
+	}
+	if u.dir != "" {
+		u.saveErr = appendRecord(u.dir, r)
+	}
+}
+
+func (u *ui) saveSettings() {
+	if u.dir != "" {
+		// shortcut: a failed settings write is dropped silently; only defaults are lost.
+		_ = saveSettings(u.dir, settings{Mode: modes[u.mode], Theme: themes[u.theme].name, Tape: u.tape, Lang: u.lang})
+	}
 }
 
 func (u *ui) active(it menuItem) bool {
@@ -73,6 +120,8 @@ func (u *ui) active(it menuItem) bool {
 		return it.idx == u.mode
 	case itemText:
 		return (it.idx == 1) == u.tape
+	case itemLang:
+		return u.langs[it.idx] == u.lang
 	case itemTheme:
 		return it.idx == u.theme
 	}
@@ -80,7 +129,7 @@ func (u *ui) active(it menuItem) bool {
 }
 
 func (u *ui) moveMenu(d int) {
-	items := menuItems()
+	items := u.menuItems()
 	for {
 		u.menuIdx = (u.menuIdx + d + len(items)) % len(items)
 		if items[u.menuIdx].kind != itemHeader {
@@ -113,16 +162,20 @@ func (u *ui) key(ev *tcell.EventKey) {
 		case tcell.KeyDown:
 			u.moveMenu(1)
 		case tcell.KeyEnter:
-			switch it := menuItems()[u.menuIdx]; it.kind {
+			switch it := u.menuItems()[u.menuIdx]; it.kind {
 			case itemMode:
 				u.mode = it.idx
 				u.restart()
 			case itemText:
 				u.tape = it.idx == 1
+			case itemLang:
+				u.lang = u.langs[it.idx]
+				u.restart()
 			case itemTheme:
 				u.theme = it.idx
 			}
 			u.menuOpen = false
+			u.saveSettings()
 		}
 		return
 	}
@@ -146,6 +199,7 @@ func (u *ui) key(ev *tcell.EventKey) {
 	case tcell.KeyRune:
 		u.e.Type(ev.Rune())
 	}
+	u.recordFinish()
 }
 
 func (u *ui) mouse(ev *tcell.EventMouse, a tview.MouseAction) (*tcell.EventMouse, tview.MouseAction) {
@@ -163,13 +217,25 @@ func (u *ui) mouse(ev *tcell.EventMouse, a tview.MouseAction) (*tcell.EventMouse
 
 // Run starts the app and blocks until it quits.
 func Run() {
-	var lists struct {
-		English []string `json:"english"`
-	}
-	if err := json.Unmarshal(data.Words, &lists); err != nil {
+	u := &ui{app: tview.NewApplication(), dir: storeDir()}
+	if err := json.Unmarshal(data.Words, &u.lists); err != nil {
 		panic(err) // embedded at build time, so only a broken build gets here
 	}
-	u := &ui{app: tview.NewApplication(), words: lists.English, mode: 1}
+	for l := range u.lists {
+		u.langs = append(u.langs, l)
+	}
+	slices.Sort(u.langs)
+
+	s := loadSettings(u.dir)
+	if u.mode = slices.Index(modes, s.Mode); u.mode < 0 {
+		u.mode = 1 // words 30
+	}
+	u.theme = max(0, slices.IndexFunc(themes, func(t theme) bool { return t.name == s.Theme }))
+	u.tape, u.lang = s.Tape, s.Lang
+	if _, ok := u.lists[u.lang]; !ok {
+		u.lang = "english"
+	}
+	u.best = loadBest(u.dir)
 	u.restart()
 
 	root := tview.NewBox().SetDrawFunc(func(s tcell.Screen, x, y, w, h int) (int, int, int, int) {
@@ -182,7 +248,7 @@ func Run() {
 	go func() {
 		// drives the clock, time-mode end and the result animation; all state stays on the UI goroutine
 		for range time.NewTicker(100 * time.Millisecond).C {
-			u.app.QueueUpdateDraw(func() { u.e.Tick() })
+			u.app.QueueUpdateDraw(func() { u.e.Tick(); u.recordFinish() })
 		}
 	}()
 	if err := u.app.SetRoot(root, true).Run(); err != nil {

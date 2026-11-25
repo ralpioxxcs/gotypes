@@ -11,6 +11,9 @@ terminal based typing test application using golang inspirated by [monkeytype](h
 * words (15/30/60/120) and time (15/30/60s) modes
 * paragraph or tape (single scrolling line) text
 * result screen: wpm, accuracy, raw, consistency, per-second chart
+* languages: english, english1000, korean (also shows 타/분), polish
+* settings and results are saved; the result screen shows your personal best per mode and language
+  (`config.json` and `history.jsonl` in your OS config dir, e.g. `~/.config/gotypes` or `~/Library/Application Support/gotypes`)
 * [gmk](https://www.gmk-electronic-design.de/en/products/keycaps) keycap themes plus nord, gruvbox, catppuccin, tokyo night, rose pine, solarized light
 
 ## Install

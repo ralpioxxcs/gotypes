@@ -151,6 +151,25 @@ func TestRunes(t *testing.T) {
 	}
 }
 
+func TestStrokes(t *testing.T) {
+	for r, want := range map[rune]int{'a': 1, '가': 2, '한': 3, '왜': 3, '닭': 4, '까': 2, '했': 3, '읽': 4} {
+		if got := Strokes(r); got != want {
+			t.Errorf("Strokes(%c) = %d, want %d", r, got, want)
+		}
+	}
+}
+
+func TestTaja(t *testing.T) {
+	c := &clock{}
+	e := newWords(c, "한국", "말")
+	typeStr(e, "한")
+	c.add(6 * time.Second)
+	typeStr(e, "국 말") // 한3 + 국3 + space + 말3 = 10 strokes in 0.1 min
+	if got := e.Taja(); got != 100 {
+		t.Fatalf("taja = %v, want 100", got)
+	}
+}
+
 func TestPerSecond(t *testing.T) {
 	c := &clock{}
 	e := newWords(c, "ab")
