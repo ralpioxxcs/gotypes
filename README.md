@@ -37,13 +37,29 @@ A truecolor terminal is recommended for accurate theme colors.
 
 Korean quotes are proverbs and excerpts of public-domain works (김유정, 김소월, 나도향, 이효석, 현진건) taken verbatim from [Korean Wikisource](https://ko.wikisource.org).
 
+## Play over SSH
+Host it, and anyone can play with just `ssh`:
+```
+$ gotypes -ssh :2222 -hostkey ./gotypes_ed25519 -data ./data
+$ ssh -p 2222 your.host        # from anywhere
+```
+* Connecting with a public key keeps that key's settings and history under `-data`; without one you play unsaved.
+* Only interactive game sessions are served: commands, sessions without a PTY and port forwarding are refused.
+* Limits: `-max-sessions` (default 50), per-IP connection rate limit, 10 min idle timeout, 2 h max session.
+* Keep the host key file, or clients will warn that the host key changed.
+* Colors are 24-bit by default; on a terminal without truecolor use `ssh -o SetEnv=TCELL_TRUECOLOR=disable ...`.
+
 ## Docker
 ```
+# play
 docker run -it --rm -e "TERM=xterm-256color" placket/gotypes:latest
+# serve over SSH (host key and player data in the volume)
+docker run -d -p 2222:2222 -v gotypes:/data placket/gotypes:latest -ssh :2222 -hostkey /data/hostkey -data /data
 ```
 
 ## Dependencies
-* https://github.com/rivo/tview
+* https://github.com/gdamore/tcell
+* https://github.com/charmbracelet/wish (SSH server)
 
 ## License
 See [LICENSE](LICENSE) file
