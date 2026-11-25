@@ -65,6 +65,12 @@ type Engine struct {
 	correct, incorrect, extra int // keystrokes
 	keysAt, errAt             []int
 	wpmAt                     []float64
+	hits                      []hit // correct keys, for Recent
+}
+
+type hit struct {
+	t time.Time
+	r rune
 }
 
 // New starts a test. next supplies random words; now is the clock (time.Now outside tests).
@@ -102,6 +108,7 @@ func (e *Engine) Type(r rune) {
 			return
 		}
 		e.key(w.Correct(), false)
+		e.hit(w.Correct(), ' ')
 		if !e.Mode.Time && e.Cur == len(e.Words)-1 {
 			e.finish()
 			return
@@ -113,6 +120,7 @@ func (e *Engine) Type(r rune) {
 	i := len(w.Typed)
 	w.Typed = append(w.Typed, r)
 	e.key(w.State(i) == Correct, w.State(i) == Extra)
+	e.hit(w.State(i) == Correct, r)
 	if !e.Mode.Time && e.Cur == len(e.Words)-1 && w.Correct() {
 		e.finish()
 	}
@@ -135,6 +143,31 @@ func (e *Engine) key(ok, extra bool) {
 		e.incorrect++
 	}
 	e.errAt = bump(e.errAt, sec)
+}
+
+func (e *Engine) hit(ok bool, r rune) {
+	if ok {
+		e.hits = append(e.hits, hit{e.now(), r})
+	}
+}
+
+// Recent is the live speed: weighted correct keys per minute over the last
+// window (at least 1s, so the first keys don't spike). Use weight 1 and /5
+// for wpm, Strokes for 타/분.
+func (e *Engine) Recent(window time.Duration, weight func(rune) int) float64 {
+	if !e.Started {
+		return 0
+	}
+	now := e.now()
+	if e.Finished {
+		now = e.end
+	}
+	span := min(window, max(now.Sub(e.start), time.Second))
+	n := 0
+	for i := len(e.hits) - 1; i >= 0 && now.Sub(e.hits[i].t) < span; i-- {
+		n += weight(e.hits[i].r)
+	}
+	return float64(n) / span.Minutes()
 }
 
 func bump(s []int, i int) []int {

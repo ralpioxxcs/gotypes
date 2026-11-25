@@ -244,6 +244,35 @@ func progress(e *engine.Engine) string {
 	return fmt.Sprintf("%d/%d", e.Cur, e.Mode.N)
 }
 
+var eighths = []rune(" ▏▎▍▌▋▊▉")
+
+// meter draws the live speed gauge: a bar filled to 1/8 cell, colored from sub
+// to main along its length, a peak-hold tick, and the value on the right.
+func (c canvas) meter(g gauge, unit string, x, y, w int) {
+	label := fmt.Sprintf("%4.0f %s", g.shown, unit)
+	bw := w - runewidth.StringWidth(label) - 2
+	if bw < 4 || g.scale <= 0 {
+		return
+	}
+	fill := g.shown / g.scale * float64(bw)
+	peak := int(g.peak / g.scale * float64(bw))
+	track := blend(c.th.sub, c.th.bg, 0.7)
+	for i := range bw {
+		col := blend(c.th.sub, c.th.main, float64(i)/float64(bw-1))
+		switch f := fill - float64(i); {
+		case f >= 1:
+			c.put(x+i, y, '█', c.st(col))
+		case f > 0 && int(f*8) > 0:
+			c.put(x+i, y, eighths[int(f*8)], c.st(col))
+		case i == peak && g.peak > 0:
+			c.put(x+i, y, '┃', c.st(c.th.text))
+		default:
+			c.put(x+i, y, '─', c.st(track))
+		}
+	}
+	c.print(x+bw+2, y, label, c.st(c.th.main).Bold(true))
+}
+
 // chartGeom maps screen columns back to seconds for mouse hover.
 type chartGeom struct{ x, y, h, dw, n int }
 
@@ -435,6 +464,11 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		c.modeBar(u, x0, y0, cw)
 		if e.Started {
 			c.print(x0, y0+3, progress(e), c.st(th.main).Bold(true))
+			unit := "wpm"
+			if u.korean() {
+				unit = "타/분"
+			}
+			c.meter(u.gauge, unit, x0+12, y0+3, cw-12)
 		}
 		var cx, cy int
 		if u.tape {

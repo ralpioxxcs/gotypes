@@ -170,6 +170,25 @@ func TestTaja(t *testing.T) {
 	}
 }
 
+func TestRecent(t *testing.T) {
+	c := &clock{}
+	e := newWords(c, "abc", "def", "ghi")
+	one := func(rune) int { return 1 }
+	typeStr(e, "ab") // 2 keys in the first 0s: span is clamped to 1s
+	if got := e.Recent(3*time.Second, one); got != 120 {
+		t.Fatalf("early = %v, want 120 (2 keys / 1s)", got)
+	}
+	c.add(5 * time.Second)
+	typeStr(e, "x d") // wrong key and incomplete word: only 'd' counts
+	if got := e.Recent(3*time.Second, one); got != 20 {
+		t.Fatalf("recent = %v, want 20 (1 key / 3s)", got)
+	}
+	c.add(3 * time.Second)
+	if got := e.Recent(3*time.Second, one); got != 0 {
+		t.Fatalf("idle = %v, want 0", got)
+	}
+}
+
 func TestPerSecond(t *testing.T) {
 	c := &clock{}
 	e := newWords(c, "ab")

@@ -10,6 +10,7 @@ terminal based typing test application using golang inspirated by [monkeytype](h
 ## Features
 * words (15/30/60/120), time (15/30/60s) and quote (short/medium/long) modes
 * paragraph or tape (single scrolling line) text
+* live speed gauge while typing (last 3s, 타/분 for korean) with peak hold
 * result screen: wpm, accuracy, raw, consistency, per-second chart
 * languages: english, english1000, korean (also shows 타/분), polish
 * settings and results are saved; the result screen shows your personal best per mode and language

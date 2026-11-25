@@ -4,6 +4,7 @@ package app
 
 import (
 	"encoding/json"
+	"math"
 	"math/rand/v2"
 	"slices"
 	"strconv"
@@ -152,6 +153,7 @@ type ui struct {
 	lang       string
 	sel        int // selected second on the result chart, -1 = last
 	finishedAt time.Time
+	gauge      gauge
 	chart      chartGeom // last drawn chart, for mouse hit-testing
 
 	menuOpen bool
@@ -183,9 +185,48 @@ func (u *ui) restart() {
 	}
 	u.e = engine.New(m.Mode, next, time.Now)
 	u.sel, u.finishedAt, u.pb, u.saveErr = -1, time.Time{}, false, nil
+	u.gauge = gauge{scale: 150, scaleTo: 150}
+	if u.korean() {
+		u.gauge = gauge{scale: 800, scaleTo: 800}
+	}
 }
 
 func (u *ui) korean() bool { return u.lang == "korean" }
+
+// gauge is the live speed meter's animation state.
+type gauge struct {
+	shown, peak      float64 // eased value and its peak-hold marker
+	scale, scaleTo   float64 // full-bar value; grows (eased) when outrun
+	peakAt, lastTick time.Time
+}
+
+// speed is the live value the gauge chases: wpm, or 타/분 for Korean.
+func (u *ui) speed() float64 {
+	if u.korean() {
+		return u.e.Recent(3*time.Second, engine.Strokes)
+	}
+	return u.e.Recent(3*time.Second, func(rune) int { return 1 }) / 5
+}
+
+// animate advances the gauge one frame: ease toward the live speed, hold the
+// peak for a second then let it fall, and widen the scale if outrun.
+func (u *ui) animate(now time.Time) {
+	g := &u.gauge
+	dt := now.Sub(g.lastTick).Seconds()
+	g.lastTick = now
+	if dt <= 0 || dt > 0.5 {
+		dt = 0.033
+	}
+	ease := func(v, to, tau float64) float64 { return v + (to-v)*(1-math.Exp(-dt/tau)) }
+	g.shown = ease(g.shown, u.speed(), 0.18)
+	if g.shown >= g.peak {
+		g.peak, g.peakAt = g.shown, now
+	} else if now.Sub(g.peakAt) > time.Second {
+		g.peak = max(g.shown, g.peak-g.scale*dt/2)
+	}
+	g.scaleTo = max(g.scaleTo, math.Ceil(g.peak*1.15/50)*50)
+	g.scale = ease(g.scale, g.scaleTo, 0.3)
+}
 
 // recordFinish runs once per finished test: PB check and history append.
 func (u *ui) recordFinish() {
@@ -362,9 +403,9 @@ func Run() {
 	u.app.SetMouseCapture(u.mouse)
 	u.app.EnableMouse(true)
 	go func() {
-		// drives the clock, time-mode end and the result animation; all state stays on the UI goroutine
-		for range time.NewTicker(100 * time.Millisecond).C {
-			u.app.QueueUpdateDraw(func() { u.e.Tick(); u.recordFinish() })
+		// ~30fps: drives the clock, time-mode end and the animations; all state stays on the UI goroutine
+		for now := range time.NewTicker(33 * time.Millisecond).C {
+			u.app.QueueUpdateDraw(func() { u.e.Tick(); u.recordFinish(); u.animate(now) })
 		}
 	}()
 	if err := u.app.SetRoot(root, true).Run(); err != nil {
