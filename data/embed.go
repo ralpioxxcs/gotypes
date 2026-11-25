@@ -5,3 +5,6 @@ import _ "embed"
 
 //go:embed words.json
 var Words []byte
+
+//go:embed quotes.json
+var Quotes []byte

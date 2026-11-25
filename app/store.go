@@ -6,16 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"time"
-
-	"github.com/ralpioxxcs/gotypes/internal/engine"
 )
 
 // settings survive restarts. Stored by value/name so reordering lists can't misapply them.
 type settings struct {
-	Mode  engine.Mode `json:"mode"`
-	Theme string      `json:"theme"`
-	Tape  bool        `json:"tape"`
-	Lang  string      `json:"lang"`
+	Mode  string `json:"mode"` // e.g. "words 30", "quote"
+	Theme string `json:"theme"`
+	Tape  bool   `json:"tape"`
+	Lang  string `json:"lang"`
 }
 
 // record is one finished test, one JSON line in history.jsonl.

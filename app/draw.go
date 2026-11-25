@@ -211,33 +211,42 @@ func (c canvas) tape(e *engine.Engine, x, y, width int) (int, int) {
 	return cx, y
 }
 
-func (c canvas) modeBar(cur int, lang string, x, y, width int) {
+func (c canvas) modeBar(u *ui, x, y, width int) {
 	xx, kind := x, ""
 	for i, m := range modes {
-		k := modeKind(m)
-		if k != kind {
+		if m == quoteMode && !u.hasQuotes() {
+			continue
+		}
+		val := c.st(c.th.sub)
+		if i == u.mode {
+			val = c.st(c.th.main).Bold(true)
+		}
+		if k := modeKind(m); k != kind {
 			if kind != "" {
 				xx += 2
 			}
+			kind = k
+			if m == quoteMode { // no numbers: the label is the value
+				xx = c.print(xx, y, k, val)
+				continue
+			}
 			st := c.st(c.th.sub)
-			if modeKind(modes[cur]) == k {
+			if modeKind(modes[u.mode]) == k {
 				st = c.st(c.th.text)
 			}
 			xx = c.print(xx, y, k+" ", st)
-			kind = k
 		}
-		st := c.st(c.th.sub)
-		if i == cur {
-			st = c.st(c.th.main).Bold(true)
-		}
-		xx = c.print(xx, y, fmt.Sprint(m.N)+" ", st)
+		xx = c.print(xx, y, fmt.Sprint(m.N)+" ", val)
 	}
-	right := lang + " · " + c.th.name
+	right := u.lang + " · " + c.th.name
 	c.print(x+width-runewidth.StringWidth(right), y, right, c.st(c.th.sub))
 }
 
 func modeKind(m engine.Mode) string {
-	if m.Time {
+	switch {
+	case m == quoteMode:
+		return "quote"
+	case m.Time:
 		return "time"
 	}
 	return "words"
@@ -334,10 +343,10 @@ func (c canvas) chart(ps []engine.Second, sel int, since time.Duration, x, y, w,
 }
 
 func (u *ui) draw(s tcell.Screen, w, h int) {
-	items := u.menuItems()
+	list, sel := u.menuList()
 	th := themes[u.theme]
-	if it := items[u.menuIdx]; u.menuOpen && it.kind == itemTheme {
-		th = themes[it.idx] // live preview
+	if u.menuOpen && u.menuCat == catTheme && sel >= 0 {
+		th = themes[themeIndex(list[sel])] // live preview
 	}
 	c := canvas{s, th}
 	c.fill(0, 0, w, h, c.st(th.text))
@@ -348,7 +357,7 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	s.HideCursor()
 	if !e.Finished {
 		y0 := max(1, (h-8)/2)
-		c.modeBar(u.mode, u.lang, x0, y0, cw)
+		c.modeBar(u, x0, y0, cw)
 		if e.Started {
 			c.print(x0, y0+3, progress(e), c.st(th.main).Bold(true))
 		}
@@ -364,7 +373,10 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		c.hints(w, h-2, "tab", "restart", "esc", "menu", "ctrl+c", "quit")
 	} else {
 		y0 := max(1, (h-24)/2)
-		c.modeBar(u.mode, u.lang, x0, y0, cw)
+		c.modeBar(u, x0, y0, cw)
+		if u.quote.Source != "" {
+			c.print(x0, y0+1, "— "+u.quote.Source, c.st(th.sub))
+		}
 		label, speed, detail := "wpm", e.WPM(), ""
 		if u.korean() {
 			label, speed, detail = "타/분", e.Taja(), fmt.Sprintf("wpm %.0f   ", e.WPM())
@@ -392,34 +404,66 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	}
 
 	if u.menuOpen {
-		c.menu(items, u, w, h)
+		c.menu(u, list, sel, w, h)
 	}
 }
 
-func (c canvas) menu(items []menuItem, u *ui, w, h int) {
+// menu: level 1 lists categories with their current value; level 2 lists one
+// category's options under a search line.
+func (c canvas) menu(u *ui, list []string, sel, w, h int) {
 	th := c.th
-	vis := min(len(items), h-4)
-	top := min(max(0, u.menuIdx-vis/2), len(items)-vis)
-	bw, bh := 30, vis+2
-	mx, my := (w-bw)/2, (h-bh)/2
 	pane := c.st(th.text).Background(th.subAlt)
-	c.fill(mx, my, bw, bh, pane)
-	c.box(mx, my, bw, bh, pane.Foreground(th.sub))
-	for i := top; i < top+vis; i++ {
-		it, yy := items[i], my+1+i-top
-		if it.kind == itemHeader {
-			c.print(mx+2, yy, it.label, pane.Foreground(th.sub))
-			continue
+	dim := pane.Foreground(th.sub)
+	hi := pane.Background(th.main).Foreground(th.bg)
+	const bw = 34
+	mx := (w - bw) / 2
+
+	if u.menuCat < 0 {
+		bh := len(categories) + 2
+		my := (h - bh) / 2
+		c.fill(mx, my, bw, bh, pane)
+		c.box(mx, my, bw, bh, dim)
+		c.print(mx+2, my, " settings ", dim)
+		for i, cat := range categories {
+			yy, st := my+1+i, pane
+			if i == sel {
+				st = hi
+				c.fill(mx+1, yy, bw-2, 1, st)
+			}
+			c.print(mx+3, yy, cat.name, st)
+			c.print(mx+14, yy, cat.current(u), st)
+			c.put(mx+bw-3, yy, '›', st)
 		}
-		st := pane
-		if i == u.menuIdx {
-			st = pane.Background(th.main).Foreground(th.bg)
+		c.hints(w, my+bh+1, "↑↓", "move", "enter", "open", "esc", "close")
+		return
+	}
+
+	cat := categories[u.menuCat]
+	all := len(cat.options(u))
+	vis := max(1, min(all, 10, h-8)) // box keeps its size while filtering
+	bh := vis + 3
+	my := (h - bh) / 2
+	c.fill(mx, my, bw, bh, pane)
+	c.box(mx, my, bw, bh, dim)
+	c.print(mx+2, my, " "+cat.name+" ", dim)
+	x := c.print(mx+3, my+1, "/ ", dim)
+	x = c.print(x, my+1, u.query, pane)
+	c.put(x, my+1, '▏', pane.Foreground(th.caret))
+	if len(list) == 0 {
+		c.print(mx+3, my+2, "no match", dim)
+	}
+	top := min(max(0, sel-vis/2), max(0, len(list)-vis))
+	for i := top; i < min(len(list), top+vis); i++ {
+		yy, st := my+2+i-top, pane
+		if i == sel {
+			st = hi
 			c.fill(mx+1, yy, bw-2, 1, st)
 		}
 		mark := "  "
-		if u.active(it) {
+		if list[i] == cat.current(u) {
 			mark = "● "
 		}
-		c.print(mx+3, yy, mark+it.label, st)
+		c.print(mx+3, yy, mark+list[i], st)
 	}
+	c.hints(w, my+bh+1, "↑↓", "move", "type", "search", "enter", "select", "esc", "back")
 }

@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/ralpioxxcs/gotypes/internal/engine"
 )
 
 func TestSettingsRoundTrip(t *testing.T) {
@@ -13,7 +11,7 @@ func TestSettingsRoundTrip(t *testing.T) {
 	if got := loadSettings(dir); got != (settings{}) {
 		t.Fatalf("missing file should give zero settings, got %+v", got)
 	}
-	want := settings{Mode: engine.Mode{Time: true, N: 30}, Theme: "nord", Tape: true, Lang: "korean"}
+	want := settings{Mode: "time 30", Theme: "nord", Tape: true, Lang: "korean"}
 	if err := saveSettings(dir, want); err != nil {
 		t.Fatal(err)
 	}

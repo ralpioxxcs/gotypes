@@ -8,7 +8,7 @@ terminal based typing test application using golang inspirated by [monkeytype](h
 ![Screenshot](gotypes.gif)
 
 ## Features
-* words (15/30/60/120) and time (15/30/60s) modes
+* words (15/30/60/120), time (15/30/60s) and quote modes
 * paragraph or tape (single scrolling line) text
 * result screen: wpm, accuracy, raw, consistency, per-second chart
 * languages: english, english1000, korean (also shows 타/분), polish
@@ -27,12 +27,14 @@ Run `gotypes` (or `go run .` in the source root) and start typing.
 | key | action |
 |---|---|
 | <kbd>tab</kbd> | restart |
-| <kbd>esc</kbd> | menu: mode, text style, theme (themes preview on hover) |
+| <kbd>esc</kbd> | settings: mode, text, language, theme. Enter a category, type to filter, enter to apply (themes preview as you move) |
 | <kbd>ctrl</kbd>+<kbd>w</kbd> / <kbd>alt</kbd>+<kbd>backspace</kbd> | delete word |
 | <kbd>←</kbd> <kbd>→</kbd> or mouse | inspect a second on the result chart |
 | <kbd>ctrl</kbd>+<kbd>c</kbd> | quit |
 
 A truecolor terminal is recommended for accurate theme colors.
+
+Korean quotes are proverbs and excerpts of public-domain works (김유정, 김소월, 이효석, 현진건) taken verbatim from [Korean Wikisource](https://ko.wikisource.org).
 
 ## Docker
 ```

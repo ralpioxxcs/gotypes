@@ -1,0 +1,252 @@
+{
+ "english": [
+  {
+   "text": "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself"
+  },
+  {
+   "text": "Man is a mystery. It needs to be unravelled, and if you spend your whole life unravelling it, don't say that you've wasted time. I am studying that mystery because I want to be a human being"
+  },
+  {
+   "text": "A man is not called wise because he talks and talks again; but if he is peaceful, loving and fearless then he is in truth called wise"
+  },
+  {
+   "text": "You can search throughout the entire universe for someone who is more deserving of your love and affection than you are yourself, and that person is not to be found anywhere. You, yourself, as much as anybody in the entire universe, deserve your love and affection"
+  },
+  {
+   "text": "Sometimes it's not enough to know what things mean, sometimes you have to know what things don't mean"
+  },
+  {
+   "text": "We seldom realize, for example that our most private thoughts and emotions are not actually our own. For we think in terms of languages and images which we did not invent, but which were given to us by our society"
+  },
+  {
+   "text": "You will not be punished for your anger; you will be punished by your anger"
+  },
+  {
+   "text": "If others tell us something we make assumptions, and if they don't tell us something we make assumptions to fulfill our need to know and to replace the need to communicate. Even if we hear something and we don't understand we make assumptions about what it means and then believe the assumptions. We make all sorts of assumptions because we don't have the courage to ask questions"
+  },
+  {
+   "text": "I've come to believe that all my past failure and frustration were actually laying the foundation for the understandings that have created the new level of living I now enjoy"
+  },
+  {
+   "text": "The invariable mark of wisdom is to see the miraculous in the common"
+  }
+ ],
+ "korean": [
+  {
+   "text": "가는 말이 고와야 오는 말이 곱다.",
+   "source": "속담"
+  },
+  {
+   "text": "낮말은 새가 듣고 밤말은 쥐가 듣는다.",
+   "source": "속담"
+  },
+  {
+   "text": "세 살 버릇 여든까지 간다.",
+   "source": "속담"
+  },
+  {
+   "text": "천 리 길도 한 걸음부터.",
+   "source": "속담"
+  },
+  {
+   "text": "백지장도 맞들면 낫다.",
+   "source": "속담"
+  },
+  {
+   "text": "소 잃고 외양간 고친다.",
+   "source": "속담"
+  },
+  {
+   "text": "원숭이도 나무에서 떨어진다.",
+   "source": "속담"
+  },
+  {
+   "text": "등잔 밑이 어둡다.",
+   "source": "속담"
+  },
+  {
+   "text": "발 없는 말이 천 리 간다.",
+   "source": "속담"
+  },
+  {
+   "text": "티끌 모아 태산.",
+   "source": "속담"
+  },
+  {
+   "text": "돌다리도 두들겨 보고 건너라.",
+   "source": "속담"
+  },
+  {
+   "text": "가는 날이 장날이다.",
+   "source": "속담"
+  },
+  {
+   "text": "고래 싸움에 새우 등 터진다.",
+   "source": "속담"
+  },
+  {
+   "text": "공든 탑이 무너지랴.",
+   "source": "속담"
+  },
+  {
+   "text": "구슬이 서 말이라도 꿰어야 보배라.",
+   "source": "속담"
+  },
+  {
+   "text": "금강산도 식후경.",
+   "source": "속담"
+  },
+  {
+   "text": "누워서 떡 먹기.",
+   "source": "속담"
+  },
+  {
+   "text": "될성부른 나무는 떡잎부터 알아본다.",
+   "source": "속담"
+  },
+  {
+   "text": "뛰는 놈 위에 나는 놈 있다.",
+   "source": "속담"
+  },
+  {
+   "text": "말 한마디에 천 냥 빚도 갚는다.",
+   "source": "속담"
+  },
+  {
+   "text": "믿는 도끼에 발등 찍힌다.",
+   "source": "속담"
+  },
+  {
+   "text": "벼는 익을수록 고개를 숙인다.",
+   "source": "속담"
+  },
+  {
+   "text": "빈 수레가 요란하다.",
+   "source": "속담"
+  },
+  {
+   "text": "사공이 많으면 배가 산으로 간다.",
+   "source": "속담"
+  },
+  {
+   "text": "서당 개 삼 년이면 풍월을 읊는다.",
+   "source": "속담"
+  },
+  {
+   "text": "아니 땐 굴뚝에 연기 나랴.",
+   "source": "속담"
+  },
+  {
+   "text": "열 번 찍어 안 넘어가는 나무 없다.",
+   "source": "속담"
+  },
+  {
+   "text": "오르지 못할 나무는 쳐다보지도 마라.",
+   "source": "속담"
+  },
+  {
+   "text": "우물 안 개구리.",
+   "source": "속담"
+  },
+  {
+   "text": "윗물이 맑아야 아랫물이 맑다.",
+   "source": "속담"
+  },
+  {
+   "text": "작은 고추가 더 맵다.",
+   "source": "속담"
+  },
+  {
+   "text": "쥐구멍에도 볕 들 날 있다.",
+   "source": "속담"
+  },
+  {
+   "text": "콩 심은 데 콩 나고 팥 심은 데 팥 난다.",
+   "source": "속담"
+  },
+  {
+   "text": "하늘이 무너져도 솟아날 구멍이 있다.",
+   "source": "속담"
+  },
+  {
+   "text": "호랑이도 제 말 하면 온다.",
+   "source": "속담"
+  },
+  {
+   "text": "호랑이에게 물려 가도 정신만 차리면 산다.",
+   "source": "속담"
+  },
+  {
+   "text": "개구리 올챙이 적 생각 못 한다.",
+   "source": "속담"
+  },
+  {
+   "text": "꿩 먹고 알 먹고.",
+   "source": "속담"
+  },
+  {
+   "text": "급할수록 돌아가라.",
+   "source": "속담"
+  },
+  {
+   "text": "낫 놓고 기역 자도 모른다.",
+   "source": "속담"
+  },
+  {
+   "text": "여름장이란 애시당초에 글러서, 해는 아직 중천에 있건만 장판은 벌써 쓸쓸하고 더운 햇발이 벌여놓은 전 휘장 밑으로 등줄기를 훅훅 볶는다.",
+   "source": "이효석, 「메밀꽃 필 무렵」"
+  },
+  {
+   "text": "어물장수도, 땜장이도, 엿장수도, 생강장수도 꼴들이 보이지 않았다. 내일은 진부와 대화에 장이 선다. 축들은 그 어느 쪽으로든지 밤을 새며 육칠십 리 밤길을 타박거리지 않으면 안 된다.",
+   "source": "이효석, 「메밀꽃 필 무렵」"
+  },
+  {
+   "text": "산허리는 온통 메밀 밭이어서 피기 시작한 꽃이 소금을 뿌린 듯이 흐붓한 달빛에 숨이 막힐 지경이다. 붉은 대공이 향기같이 애잔하고 나귀들의 걸음도 시원하다.",
+   "source": "이효석, 「메밀꽃 필 무렵」"
+  },
+  {
+   "text": "새침하게 흐린 품이 눈이 올 듯하더니 눈은 아니 오고 얼다가 만 비가 추적추적 내리었다.",
+   "source": "현진건, 「운수 좋은 날」"
+  },
+  {
+   "text": "더구나 이날 이때에 이 팔십 전이라는 돈이 그에게 얼마나 유용한지 몰랐다. 컬컬한 목에 모주 한 잔도 적실 수 있거니와 그보다도 앓는 아내에게 설렁탕 한 그릇도 사다줄 수 있음이다.",
+   "source": "현진건, 「운수 좋은 날」"
+  },
+  {
+   "text": "집이 차차 멀어갈수록 김 첨지의 걸음에는 다시금 신이 나기 시작하였다. 다리를 재게 놀려야만 쉴새없이 자기의 머리에 떠오르는 모든 근심과 걱정을 잊을 듯이.",
+   "source": "현진건, 「운수 좋은 날」"
+  },
+  {
+   "text": "오늘도 또 우리 수탉이 막 쫓기었다. 내가 점심을 먹고 나무를 하러 갈 양으로 나올 때이었다. 산으로 올라서려니까 등뒤에서 푸드득푸드득, 하고 닭의 횃소리가 야단이다.",
+   "source": "김유정, 「동백꽃」"
+  },
+  {
+   "text": "나는 고개도 돌리지 않고 일하던 손으로 그 감자를 도로 어깨 너머로 쑥 밀어 버렸다. 그랬더니 그래도 가는 기색이 없고, 뿐만 아니라 쌔근쌔근하고 심상치 않게 숨소리가 점점 거칠어진다.",
+   "source": "김유정, 「동백꽃」"
+  },
+  {
+   "text": "내가 여기에 와서 돈 한 푼 안 받고 일하기를 삼 년 하고 꼬바기 일곱 달 동안을 했다. 그런데도 미처 못 자랐다니까 이 키는 언제야 자라는 겐지 짜장 영문 모른다.",
+   "source": "김유정, 「봄봄」"
+  },
+  {
+   "text": "이래서 나는 애최 계약이 잘못된 걸 알았다. 이태면 이태, 삼 년이면 삼 년, 기한을 딱 작정하고 일을 해야 원 할 것이다.",
+   "source": "김유정, 「봄봄」"
+  },
+  {
+   "text": "개 돼지는 푹푹 크는데 왜 이리도 사람은 안 크는지, 한동안 머리가 아프도록 궁리도 해보았다.",
+   "source": "김유정, 「봄봄」"
+  },
+  {
+   "text": "나 보기가 역겨워 가실 때에는 말없이 고이 보내드리오리다.",
+   "source": "김소월, 「진달래꽃」"
+  },
+  {
+   "text": "가시는 걸음 걸음 놓인 그 꽃을 사뿐히 즈려밟고 가시옵소서.",
+   "source": "김소월, 「진달래꽃」"
+  },
+  {
+   "text": "나 보기가 역겨워 가실 때에는 죽어도 아니 눈물 흘리오리다.",
+   "source": "김소월, 「진달래꽃」"
+  }
+ ]
+}
