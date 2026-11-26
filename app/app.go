@@ -405,14 +405,23 @@ func (u *ui) key(ev *tcell.EventKey) {
 		return
 	}
 	if k := ev.Key(); u.held() && k != tcell.KeyTab && k != tcell.KeyEscape {
-		if k == tcell.KeyEnter {
+		switch {
+		case k == tcell.KeyEnter:
 			u.seat.SetReady(!u.seat.Snapshot().Me().Ready)
+		case ev.Rune() == '+': // not a letter, so it works with a Korean IME on too
+			u.seat.AddBot()
 		}
 		return
 	}
 	switch ev.Key() {
 	case tcell.KeyTab:
 		u.restart()
+	case tcell.KeyEnter:
+		if u.seat != nil && u.e.Finished && u.seat.Rematch() {
+			snap := u.seat.Snapshot()
+			u.quote = quote{snap.Text, snap.Source}
+			u.reset() // even if the new text happens to be the same
+		}
 	case tcell.KeyEscape:
 		u.menuOpen, u.menuCat, u.menuIdx = true, -1, 0
 	case tcell.KeyLeft:

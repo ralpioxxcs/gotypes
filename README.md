@@ -45,7 +45,7 @@ Host it, and anyone can play with just `ssh`:
 $ gotypes -ssh :2222 -hostkey ./gotypes_ed25519 -data ./data
 $ ssh -p 2222 your.host        # from anywhere
 ```
-* **Race**: you start in the race room for your language (up to 8 players); press enter when ready. Other modes are in the mode bar and menu. A 10 s countdown starts once two players are ready; anyone not ready by then moves on to the next room. Everyone types the same quote with live progress lanes. Your ssh user name is your racer name (`ssh name@your.host`).
+* **Race**: you start in the race room for your language (up to 8 players); press enter when ready. Other modes are in the mode bar and menu. A 10 s countdown starts once two players are ready; anyone not ready by then moves on to the next room. Everyone types the same quote with live progress lanes. Alone? Press `+` in the lobby to add bots (40, 60, 80, 100 wpm). After finishing, enter starts a rematch with the same room (bots included); tab finds a new room. Your ssh user name is your racer name (`ssh name@your.host`).
 * Connecting with a public key keeps that key's settings and history under `-data`; without one you play unsaved.
 * Only interactive game sessions are served: commands, sessions without a PTY and port forwarding are refused.
 * Limits: `-max-sessions` (default 50), per-IP connection rate limit, 10 min idle timeout, 2 h max session.

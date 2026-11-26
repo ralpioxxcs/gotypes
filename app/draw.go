@@ -644,9 +644,9 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		}
 		switch {
 		case u.held() && snap.Me().Ready:
-			c.hints(w, h-2, "enter", "not ready", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
+			c.hints(w, h-2, "enter", "not ready", "+", "add bot", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
 		case u.held():
-			c.hints(w, h-2, "enter", "ready", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
+			c.hints(w, h-2, "enter", "ready", "+", "add bot", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
 		default:
 			c.hints(w, h-2, "tab", "restart", "esc", "menu", "ctrl+c", "quit")
 		}
@@ -685,7 +685,11 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		}
 		chH := min(8, h-5-chY) // room for error row, x labels, hints
 		u.chart = c.chart(e.PerSecond(), u.sel, time.Since(u.finishedAt), x0, chY, cw, chH)
-		c.hints(w, h-2, "←/→", "inspect", "tab", "restart", "esc", "menu", "ctrl+c", "quit")
+		if u.seat != nil {
+			c.hints(w, h-2, "enter", "rematch", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
+		} else {
+			c.hints(w, h-2, "←/→", "inspect", "tab", "restart", "esc", "menu", "ctrl+c", "quit")
+		}
 	}
 
 	if u.menuOpen {

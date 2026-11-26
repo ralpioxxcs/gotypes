@@ -65,4 +65,13 @@ func TestRace(t *testing.T) {
 	if s := b.seat.Snapshot(); s.State != race.Waiting || len(s.Players) != 2 || s.Players[0].Name != "c" {
 		t.Fatalf("tab during a race joins the next room, where c waits: %+v", s)
 	}
+
+	typ(b, "+") // in the lobby + adds a bot
+	if p := b.seat.Snapshot().Players; len(p) != 3 || p[2].Name != "bot40" {
+		t.Fatalf("+ adds a bot: %+v", p)
+	}
+	enter(a) // a finished: rematch
+	if s := a.seat.Snapshot(); a.e.Finished || !s.Me().Ready || s.State != race.Waiting || len(s.Players) != 1 {
+		t.Fatalf("enter after finishing moves a, ready, to a fresh rematch room: %+v", s)
+	}
 }

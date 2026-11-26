@@ -114,3 +114,47 @@ func TestClean(t *testing.T) {
 		}
 	}
 }
+
+func TestBotsAndRematch(t *testing.T) {
+	h, c := newHub() // texts are 14 runes: bot60 (300 cpm) ends at 2.8s, bot40 at 4.2s
+	a := h.Join("alice", "english")
+	b := h.Join("bob", "english")
+	a.AddBot()
+	a.AddBot()
+	if s := a.Snapshot(); s.State != Waiting || len(s.Players) != 4 || s.Players[2].Name != "bot40" || s.Players[3].Name != "bot60" {
+		t.Fatalf("bots join ready, but never start a race without a ready person: %+v", s)
+	}
+	ready(a, b)
+	c.t = c.t.Add(Countdown + 3*time.Second)
+	a.Report(1, 60, true) // at 3s: after bot60, before bot40
+	c.t = c.t.Add(2 * time.Second)
+	p := b.Snapshot().Players
+	if p[3].Place != 1 || p[3].Time != 2800*time.Millisecond || p[0].Place != 2 || p[2].Place != 3 || p[1].Place != 0 {
+		t.Fatalf("places in finish order, bots included: %+v", p)
+	}
+
+	if b.Rematch() {
+		t.Fatal("only a finished player can rematch")
+	}
+	old := a.Snapshot().Text
+	if !a.Rematch() {
+		t.Fatal("finished: rematch")
+	}
+	s := a.Snapshot()
+	if s.Text == old || s.State != Counting || len(s.Players) != 3 || !s.Me().Ready || s.Players[0].Name != "bot40" {
+		t.Fatalf("rematch: new text, ready, with the bots, counting down: %+v", s)
+	}
+	if p := b.Snapshot().Players; p[0].Left || p[0].Place != 2 {
+		t.Fatalf("a's finished lane keeps its place in the old race: %+v", p[0])
+	}
+	carol := h.Join("carol", "english")
+	if carol.Snapshot().Text == s.Text {
+		t.Fatal("the rematch room is only for the old room's players")
+	}
+
+	carol.AddBot()
+	carol.Leave()
+	if s := h.Join("erin", "english").Snapshot(); len(s.Players) != 1 {
+		t.Fatalf("bots leave with the last person: %+v", s)
+	}
+}
