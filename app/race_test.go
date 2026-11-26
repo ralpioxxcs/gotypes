@@ -34,22 +34,20 @@ func TestRace(t *testing.T) {
 		t.Fatalf("both race the room's text: %q, %d words", a.quote.Text, len(b.e.Words))
 	}
 	enter := func(u *ui) { u.key(tcell.NewEventKey(tcell.KeyEnter, 0, tcell.ModNone)) }
-	c := join("c", hub) // never readies
 	enter(a)
 	enter(b)
 	if s := a.seat.Snapshot(); s.State != race.Counting || !s.Me().Ready {
-		t.Fatalf("enter readies; two ready players count down: %+v", s)
+		t.Fatalf("enter readies; everyone ready counts down: %+v", s)
 	}
+	c := join("c", hub) // during the countdown
 	typ(a, "ab")
 	if a.e.Started {
 		t.Fatal("typing before the countdown ends must be ignored")
 	}
 
 	clk = clk.Add(race.Countdown + 4*time.Second)
-	c.quote.Text = "stale" // every room gets "ab cd", so mark c's old text to see the switch
-	c.report()
-	if s := c.seat.Snapshot(); s.State != race.Waiting || len(s.Players) != 1 || c.quote.Text != "ab cd" {
-		t.Fatalf("c was not ready: moved to a fresh room: %+v", s)
+	if s := c.seat.Snapshot(); s.State != race.Waiting || len(s.Players) != 1 {
+		t.Fatalf("c joined during the countdown: a fresh room: %+v", s)
 	}
 	typ(a, "ab cd")
 	typ(b, "ab ")
@@ -70,6 +68,15 @@ func TestRace(t *testing.T) {
 	if p := b.seat.Snapshot().Players; len(p) != 3 || p[2].Name != "bot40" {
 		t.Fatalf("+ adds a bot: %+v", p)
 	}
+	typ(b, "-")
+	if p := b.seat.Snapshot().Players; len(p) != 2 {
+		t.Fatalf("- removes the bot: %+v", p)
+	}
+	enter(a) // a just finished: too soon, ignored
+	if a.seat.Snapshot().Text != "ab cd" || !a.e.Finished {
+		t.Fatal("keys right after finishing must not rematch")
+	}
+	a.finishedAt = a.finishedAt.Add(-finishGuard)
 	enter(a) // a finished: rematch
 	if s := a.seat.Snapshot(); a.e.Finished || !s.Me().Ready || s.State != race.Waiting || len(s.Players) != 1 {
 		t.Fatalf("enter after finishing moves a, ready, to a fresh rematch room: %+v", s)

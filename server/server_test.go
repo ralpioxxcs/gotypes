@@ -160,11 +160,11 @@ func TestRaceOverSSH(t *testing.T) {
 		return in, out
 	}
 	ina, a := joinRace()
-	waitOutput(t, a, "press enter when you're ready")
+	waitOutput(t, a, "waiting for players")
 	inb, b := joinRace()
 	waitOutput(t, b, "player#2") // both named after the ssh user, made unique
 	ina.Write([]byte("\r"))
-	waitOutput(t, a, "waiting for another ready player")
+	waitOutput(t, a, "waiting for everyone to be ready")
 	inb.Write([]byte("\r"))
 	waitOutput(t, a, "starting in")
 }

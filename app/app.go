@@ -239,15 +239,10 @@ func (u *ui) leave() {
 // held is true while a race has not started: typing waits for the countdown.
 func (u *ui) held() bool { return u.seat != nil && u.seat.Snapshot().State != race.Running }
 
-// report sends this player's lane to the room, and follows the player to the
-// next room's text if the race started without them.
+// report sends this player's lane to the room.
 func (u *ui) report() {
 	if u.seat == nil {
 		return
-	}
-	if snap := u.seat.Snapshot(); snap.Text != u.quote.Text {
-		u.quote = quote{snap.Text, snap.Source}
-		u.reset()
 	}
 	e := u.e
 	speed := e.WPM()
@@ -400,6 +395,9 @@ func (u *ui) key(ev *tcell.EventKey) {
 		u.openedAt = time.Time{}
 		return
 	}
+	if u.e.Finished && time.Since(u.finishedAt) < finishGuard {
+		return // keys still flying from the last words must not restart or rematch
+	}
 	if u.menuOpen {
 		u.menuKey(ev)
 		return
@@ -408,8 +406,10 @@ func (u *ui) key(ev *tcell.EventKey) {
 		switch {
 		case k == tcell.KeyEnter:
 			u.seat.SetReady(!u.seat.Snapshot().Me().Ready)
-		case ev.Rune() == '+': // not a letter, so it works with a Korean IME on too
+		case ev.Rune() == '+': // not letters, so they work with a Korean IME on too
 			u.seat.AddBot()
+		case ev.Rune() == '-':
+			u.seat.RemoveBot()
 		}
 		return
 	}
@@ -441,6 +441,9 @@ func (u *ui) key(ev *tcell.EventKey) {
 	}
 	u.recordFinish()
 }
+
+// finishGuard is how long keys are ignored once a test ends.
+const finishGuard = time.Second
 
 // modeHit is the cells [x0, x1) on row y where the mode bar drew mode.
 type modeHit struct{ x0, x1, y, mode int }

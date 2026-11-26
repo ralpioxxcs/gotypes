@@ -47,7 +47,7 @@ func TestReadyAndCountdown(t *testing.T) {
 		t.Fatal("un-readying below two stops the countdown")
 	}
 	ready(b)
-	d := h.Join("dave", "english") // joins during the countdown, never readies
+	d := h.Join("dave", "english") // during the countdown: gets the next room
 	a.Report(0.5, 80, false)       // before the start: ignored
 
 	c.t = c.t.Add(Countdown)
@@ -57,7 +57,7 @@ func TestReadyAndCountdown(t *testing.T) {
 	}
 	sd := d.Snapshot()
 	if sd.State != Waiting || sd.Text == s.Text || len(sd.Players) != 1 || sd.Players[0].Name != "dave" {
-		t.Fatalf("unready player moves on to the next room: %+v", sd)
+		t.Fatalf("a counting room takes nobody new: %+v", sd)
 	}
 	if late := h.Join("carol", "english").Snapshot(); late.Text != sd.Text || len(late.Players) != 2 {
 		t.Fatalf("late joiner meets dave in the next room: %+v", late)
@@ -124,7 +124,11 @@ func TestBotsAndRematch(t *testing.T) {
 	if s := a.Snapshot(); s.State != Waiting || len(s.Players) != 4 || s.Players[2].Name != "bot40" || s.Players[3].Name != "bot60" {
 		t.Fatalf("bots join ready, but never start a race without a ready person: %+v", s)
 	}
-	ready(a, b)
+	ready(a)
+	if s := a.Snapshot(); s.State != Waiting {
+		t.Fatalf("3 of 4 ready (bob is not): keep waiting: %+v", s)
+	}
+	ready(b)
 	c.t = c.t.Add(Countdown + 3*time.Second)
 	a.Report(1, 60, true) // at 3s: after bot60, before bot40
 	c.t = c.t.Add(2 * time.Second)
@@ -152,6 +156,15 @@ func TestBotsAndRematch(t *testing.T) {
 		t.Fatal("the rematch room is only for the old room's players")
 	}
 
+	carol.AddBot()
+	ready(carol)
+	if carol.Snapshot().State != Counting {
+		t.Fatal("everyone ready, a bot included: count down")
+	}
+	carol.RemoveBot()
+	if s := carol.Snapshot(); s.State != Waiting || len(s.Players) != 1 {
+		t.Fatalf("- takes the bot out; alone, no race: %+v", s)
+	}
 	carol.AddBot()
 	carol.Leave()
 	if s := h.Join("erin", "english").Snapshot(); len(s.Players) != 1 {

@@ -387,16 +387,16 @@ func (c canvas) raceStatus(snap race.Snapshot, x, y int) {
 	hi, dim := c.st(c.th.main).Bold(true), c.st(c.th.sub)
 	switch snap.State {
 	case race.Waiting:
-		if ready {
-			c.print(x, y, "waiting for another ready player…", dim)
-		} else {
+		switch {
+		case len(snap.Players) < 2:
+			c.print(x, y, "waiting for players…   press + for a bot", dim)
+		case ready:
+			c.print(x, y, "waiting for everyone to be ready…", dim)
+		default:
 			c.print(x, y, "press enter when you're ready", hi)
 		}
 	case race.Counting:
-		xx := c.print(x, y, fmt.Sprintf("starting in %d", int(math.Ceil(time.Until(snap.Start).Seconds()))), hi)
-		if !ready {
-			c.print(xx, y, "   press enter to join", dim)
-		}
+		c.print(x, y, fmt.Sprintf("starting in %d", int(math.Ceil(time.Until(snap.Start).Seconds()))), hi)
 	default:
 		c.print(x, y, "go!", hi)
 	}
@@ -644,9 +644,9 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		}
 		switch {
 		case u.held() && snap.Me().Ready:
-			c.hints(w, h-2, "enter", "not ready", "+", "add bot", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
+			c.hints(w, h-2, "enter", "not ready", "+/-", "bot", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
 		case u.held():
-			c.hints(w, h-2, "enter", "ready", "+", "add bot", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
+			c.hints(w, h-2, "enter", "ready", "+/-", "bot", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
 		default:
 			c.hints(w, h-2, "tab", "restart", "esc", "menu", "ctrl+c", "quit")
 		}
