@@ -497,7 +497,6 @@ func Play(ctx context.Context, s tcell.Screen, dir string, hub *race.Hub, name s
 		return err
 	}
 	u.dir, u.hub, u.name = dir, hub, name
-	u.openedAt = time.Now()
 	defer u.leave()
 
 	st := loadSettings(u.dir)
@@ -514,6 +513,7 @@ func Play(ctx context.Context, s tcell.Screen, dir string, hub *race.Hub, name s
 		return err
 	}
 	defer s.Fini()
+	u.openedAt = time.Now() // after Init, so terminal setup doesn't eat the splash
 	s.EnableMouse(tcell.MouseMotionEvents)
 	events, stop := make(chan tcell.Event, 16), make(chan struct{})
 	defer close(stop)

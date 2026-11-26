@@ -105,7 +105,7 @@ func TestSplashSweepsLogoThenAnyKeySkips(t *testing.T) {
 	for _, tc := range []struct {
 		at        time.Duration
 		has, hasn string
-	}{{0, "", first}, {400 * time.Millisecond, first, top}, {time.Second, top, "words"}} {
+	}{{0, "", first}, {700 * time.Millisecond, first, top}, {2 * time.Second, top, "words"}} {
 		u.openedAt = time.Now().Add(-tc.at)
 		if s := screen(80, 24); !strings.Contains(s, tc.has) || strings.Contains(s, tc.hasn) {
 			t.Errorf("at %v: want %q and not %q", tc.at, tc.has, tc.hasn)

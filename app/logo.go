@@ -62,7 +62,7 @@ func (c canvas) logo(w, y0 int) {
 		return
 	}
 	x := (w - lw) / 2
-	c.art(x, y, lw)
+	c.art(x, y, nil)
 	if x+lw+2+len(buildVersion) <= w {
 		c.print(x+lw+2, y+len(logo)-1, buildVersion, c.st(c.th.sub))
 	}
@@ -76,21 +76,40 @@ func logoWidth() int {
 	return lw
 }
 
-// art draws the logo's first cols columns at x, y in the title gradient.
-func (c canvas) art(x, y, cols int) {
-	from, to := c.th.main, hueShift(c.th.main, 90)
-	if to == from { // grey main: no hue to turn, fade to sub instead
-		to = c.th.sub
+// chroma is how colorful c is, 0 (grey) to 1.
+func chroma(c tcell.Color) float64 {
+	r, g, b := c.RGB()
+	return float64(max(r, g, b)-min(r, g, b)) / 255
+}
+
+// titleColors are the gradient ends: the theme's first colorful role (main
+// unless it is grey, as in dracula) to that hue turned 90°; all-grey themes
+// fade main to sub.
+func titleColors(th theme) (from, to tcell.Color) {
+	for _, c := range []tcell.Color{th.main, th.caret, th.sub, th.err} {
+		if chroma(c) >= 0.25 {
+			return c, hueShift(c, 90)
+		}
 	}
+	return th.main, th.sub
+}
+
+// art draws the logo at x, y in the title gradient. shade, if set, gets each
+// column's gradient color and returns the color to use, or false to hide it.
+func (c canvas) art(x, y int, shade func(col int, fg tcell.Color) (tcell.Color, bool)) {
+	from, to := titleColors(c.th)
 	span := float64(logoWidth() + 2*(len(logo)-1)) // rows count double: cells are ~2:1
 	for j, l := range logo {
 		xx := x
 		for _, r := range l {
-			if xx-x+rw(r) > cols {
-				break
-			}
 			if r != ' ' {
-				c.put(xx, y+j, r, c.st(blend(from, to, float64(xx-x+2*j)/span)))
+				fg, show := blend(from, to, float64(xx-x+2*j)/span), true
+				if shade != nil {
+					fg, show = shade(xx-x, fg)
+				}
+				if show {
+					c.put(xx, y+j, r, c.st(fg))
+				}
 			}
 			xx += rw(r)
 		}
@@ -139,21 +158,49 @@ func hueShift(c tcell.Color, deg float64) tcell.Color {
 	return tcell.NewRGBColor(to(r1), to(g1), to(b1))
 }
 
-const splashTime = 1400 * time.Millisecond
+const (
+	splashName = "gotypes"
+	splashTime = 2400 * time.Millisecond
+	keyFlash   = 220 * time.Millisecond // a new key lights up in the text color, then settles
+)
 
-// splash sweeps the logo in behind a full-height caret, then blinks the caret
-// at its right, the way a test looks before the first key. Without room for
-// the logo the name is typed out instead.
+// keyAt is when splash key k is typed: after a short pause, at an uneven,
+// human-ish rhythm of 130-220ms per key.
+func keyAt(k int) time.Duration {
+	d := 200 * time.Millisecond
+	for i := 1; i <= k; i++ {
+		d += time.Duration(130+(i*61)%90) * time.Millisecond
+	}
+	return d
+}
+
+// splash types the name in as if on a keyboard: the logo is split into one
+// slice per letter, each appearing on its keystroke with a flash, behind a
+// full-height caret that blinks once all are typed, the way a test looks
+// before the first key. Without room for the logo, the name itself is typed.
 func (c canvas) splash(w, h int, since time.Duration) {
+	keys := len(splashName)
+	typed := 0
+	for typed < keys && since >= keyAt(typed) {
+		typed++
+	}
 	caret := c.st(c.th.bg).Background(c.th.caret)
-	blink := since/(300*time.Millisecond)%2 == 0
+	showCaret := typed < keys || since/(300*time.Millisecond)%2 == 0
 	if lw, lh := logoWidth(), len(logo); lw+2 <= w && lh <= h {
 		x, y := min((w-lw)/2, w-lw-2), (h-lh)/2 // same column as the title, caret still fits
-		cols := min(lw, max(0, int(float64(lw)*float64(since-150*time.Millisecond)/float64(600*time.Millisecond))))
-		c.art(x, y, cols)
-		if cols < lw || blink {
-			cx := x + cols
-			if cols == lw {
+		c.art(x, y, func(col int, fg tcell.Color) (tcell.Color, bool) {
+			k := col * keys / lw
+			if k >= typed {
+				return fg, false
+			}
+			if age := since - keyAt(k); age < keyFlash {
+				fg = blend(c.th.text, fg, float64(age)/float64(keyFlash))
+			}
+			return fg, true
+		})
+		if showCaret {
+			cx := x + typed*lw/keys
+			if typed == keys {
 				cx++ // rest one cell clear of the art
 			}
 			for j := range lh {
@@ -162,10 +209,8 @@ func (c canvas) splash(w, h int, since time.Duration) {
 		}
 		return
 	}
-	const name = "gotypes"
-	n := min(len(name), max(0, int((since-150*time.Millisecond)/(70*time.Millisecond))))
-	x := c.print((w-len(name)-1)/2, h/2, name[:n], c.st(c.th.text).Bold(true))
-	if n < len(name) || blink {
+	x := c.print((w-keys-1)/2, h/2, splashName[:typed], c.st(c.th.text).Bold(true))
+	if showCaret {
 		c.put(x, h/2, ' ', caret)
 	}
 }

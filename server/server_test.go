@@ -59,7 +59,8 @@ func (s *syncBuf) String() string              { s.mu.Lock(); defer s.mu.Unlock(
 
 func waitOutput(t *testing.T, out *syncBuf, want string) {
 	t.Helper()
-	for end := time.Now().Add(5 * time.Second); time.Now().Before(end); time.Sleep(20 * time.Millisecond) {
+	// 10s: the splash alone takes 2.4s before the game screen
+	for end := time.Now().Add(10 * time.Second); time.Now().Before(end); time.Sleep(20 * time.Millisecond) {
 		if strings.Contains(out.String(), want) {
 			return
 		}
