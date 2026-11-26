@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -51,7 +52,7 @@ func TestLogoOnlyWhenItFits(t *testing.T) {
 	has := func() bool {
 		cells, w, h := scr.GetContents()
 		for i := range w * h {
-			if len(cells[i].Runes) > 0 && cells[i].Runes[0] == '█' {
+			if len(cells[i].Runes) > 0 && cells[i].Runes[0] == []rune(strings.TrimSpace(logo[0]))[0] {
 				return true
 			}
 		}
@@ -85,6 +86,19 @@ func TestShortVersion(t *testing.T) {
 	} {
 		if got := shortVersion(tc.v, tc.rev, tc.dirty); got != tc.want {
 			t.Errorf("shortVersion(%q, %q, %v) = %q, want %q", tc.v, tc.rev, tc.dirty, got, tc.want)
+		}
+	}
+}
+
+func TestHueShift(t *testing.T) {
+	for _, tc := range []struct{ in, want tcell.Color }{
+		{tcell.NewRGBColor(255, 0, 0), tcell.NewRGBColor(0, 255, 0)},       // red +120° = green
+		{tcell.NewRGBColor(51, 102, 204), tcell.NewRGBColor(204, 51, 102)}, // keeps s and l
+		{tcell.NewRGBColor(238, 238, 238), tcell.NewRGBColor(238, 238, 238)},
+	} {
+		if got := hueShift(tc.in, 120); got != tc.want {
+			r, g, b := got.RGB()
+			t.Errorf("hueShift(%v) = %d,%d,%d", tc.in, r, g, b)
 		}
 	}
 }
