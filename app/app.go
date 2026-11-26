@@ -165,7 +165,8 @@ type ui struct {
 	theme      int
 	tape       bool
 	lang       string
-	sel        int // selected second on the result chart, -1 = last
+	sel        int       // selected second on the result chart, -1 = last
+	openedAt   time.Time // session start, for the splash; zero = no splash
 	finishedAt time.Time
 	gauge      gauge
 	chart      chartGeom // last drawn chart, for mouse hit-testing
@@ -392,6 +393,10 @@ func (u *ui) key(ev *tcell.EventKey) {
 		u.quit = true
 		return
 	}
+	if time.Since(u.openedAt) < splashTime { // any key skips the splash
+		u.openedAt = time.Time{}
+		return
+	}
 	if u.menuOpen {
 		u.menuKey(ev)
 		return
@@ -492,6 +497,7 @@ func Play(ctx context.Context, s tcell.Screen, dir string, hub *race.Hub, name s
 		return err
 	}
 	u.dir, u.hub, u.name = dir, hub, name
+	u.openedAt = time.Now()
 	defer u.leave()
 
 	st := loadSettings(u.dir)

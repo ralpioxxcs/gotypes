@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"runtime"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -76,5 +77,40 @@ func TestPlayQuitsOnCtrlC(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("ctrl+c did not end the session")
+	}
+}
+
+func TestSplashTypesNameThenAnyKeySkips(t *testing.T) {
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		t.Fatal(err)
+	}
+	scr.SetSize(80, 24)
+	u := &ui{lists: map[string][]string{"english": {"word"}}, langs: []string{"english"}, lang: "english", mode: 1}
+	u.restart()
+	screen := func() string {
+		u.draw(scr, 80, 24)
+		scr.Show()
+		cells, w, h := scr.GetContents()
+		var b strings.Builder
+		for i := range w * h {
+			if len(cells[i].Runes) > 0 {
+				b.WriteRune(cells[i].Runes[0])
+			}
+		}
+		return b.String()
+	}
+	for _, tc := range []struct {
+		at        time.Duration
+		has, hasn string
+	}{{0, "", "got"}, {360 * time.Millisecond, "got", "goty"}, {time.Second, "gotypes", "words"}} {
+		u.openedAt = time.Now().Add(-tc.at)
+		if s := screen(); !strings.Contains(s, tc.has) || strings.Contains(s, tc.hasn) {
+			t.Errorf("at %v: want %q and not %q", tc.at, tc.has, tc.hasn)
+		}
+	}
+	u.key(tcell.NewEventKey(tcell.KeyRune, 'x', tcell.ModNone))
+	if s := screen(); !strings.Contains(s, "words") || u.e.Started {
+		t.Fatal("a key should skip the splash without typing")
 	}
 }

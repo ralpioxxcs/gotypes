@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
@@ -124,4 +125,17 @@ func hueShift(c tcell.Color, deg float64) tcell.Color {
 	m := l - ch/2
 	to := func(v float64) int32 { return int32(math.Round((v + m) * 255)) }
 	return tcell.NewRGBColor(to(r1), to(g1), to(b1))
+}
+
+const splashTime = 1400 * time.Millisecond
+
+// splash types the name out under a solid caret, then blinks the caret, the
+// way a test looks before the first key.
+func (c canvas) splash(w, h int, since time.Duration) {
+	const name = "gotypes"
+	n := min(len(name), max(0, int((since-150*time.Millisecond)/(70*time.Millisecond))))
+	x := c.print((w-len(name)-1)/2, h/2, name[:n], c.st(c.th.text).Bold(true))
+	if n < len(name) || since/(300*time.Millisecond)%2 == 0 {
+		c.put(x, h/2, ' ', c.st(c.th.bg).Background(c.th.caret))
+	}
 }

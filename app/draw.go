@@ -556,6 +556,11 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	}
 	c := canvas{s, th}
 	c.fill(0, 0, w, h, c.st(th.text))
+	if since := time.Since(u.openedAt); since < splashTime {
+		s.HideCursor()
+		c.splash(w, h, since)
+		return
+	}
 	cw := min(w-4, 80)
 	x0 := (w - cw) / 2
 	e := u.e
