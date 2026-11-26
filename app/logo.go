@@ -161,7 +161,8 @@ func hueShift(c tcell.Color, deg float64) tcell.Color {
 const (
 	splashName = "gotypes"
 	splashTime = 2400 * time.Millisecond
-	keyFlash   = 220 * time.Millisecond // a new key lights up in the text color, then settles
+	keyFall    = 280 * time.Millisecond // a typed key drops into place from above the screen
+	keyFlash   = 220 * time.Millisecond // a landed key lights up in the text color, then settles
 )
 
 // keyAt is when splash key k is typed: after a short pause, at an uneven,
@@ -175,7 +176,7 @@ func keyAt(k int) time.Duration {
 }
 
 // splash types the name in as if on a keyboard: the logo is split into one
-// slice per letter, each appearing on its keystroke with a flash, behind a
+// slice per letter, each dropping in on its keystroke and flashing as it lands, behind a
 // full-height caret that blinks once all are typed, the way a test looks
 // before the first key. Without room for the logo, the name itself is typed.
 func (c canvas) splash(w, h int, since time.Duration) {
@@ -188,16 +189,20 @@ func (c canvas) splash(w, h int, since time.Duration) {
 	showCaret := typed < keys || since/(300*time.Millisecond)%2 == 0
 	if lw, lh := logoWidth(), len(logo); lw+2 <= w && lh <= h {
 		x, y := min((w-lw)/2, w-lw-2), (h-lh)/2 // same column as the title, caret still fits
-		c.art(x, y, func(col int, fg tcell.Color) (tcell.Color, bool) {
-			k := col * keys / lw
-			if k >= typed {
-				return fg, false
-			}
-			if age := since - keyAt(k); age < keyFlash {
-				fg = blend(c.th.text, fg, float64(age)/float64(keyFlash))
-			}
-			return fg, true
-		})
+		for k := range typed {
+			age := since - keyAt(k)
+			p := min(float64(age)/float64(keyFall), 1)
+			dy := int(math.Round(float64(-(y + lh)) * (1 - p*p))) // from above the screen, speeding up like a drop
+			c.art(x, y+dy, func(col int, fg tcell.Color) (tcell.Color, bool) {
+				if col*keys/lw != k {
+					return fg, false
+				}
+				if land := age - keyFall; land >= 0 && land < keyFlash {
+					fg = blend(c.th.text, fg, float64(land)/float64(keyFlash)) // flash on landing
+				}
+				return fg, true
+			})
+		}
 		if showCaret {
 			cx := x + typed*lw/keys
 			if typed == keys {
