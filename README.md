@@ -35,6 +35,7 @@ Run `gotypes` (or `go run .` in the source root) and start typing.
 
 A truecolor terminal is recommended for accurate theme colors.
 
+English quotes are excerpts of public-domain works taken verbatim from [Project Gutenberg](https://www.gutenberg.org), with curly quotes and dashes written as plain ASCII so they can be typed.
 Korean quotes are proverbs and excerpts of public-domain works (김유정, 김소월, 나도향, 이효석, 현진건) taken verbatim from [Korean Wikisource](https://ko.wikisource.org).
 
 ## Play over SSH

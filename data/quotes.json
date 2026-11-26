@@ -1,34 +1,256 @@
 {
  "english": [
   {
-   "text": "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself"
+   "text": "To be, or not to be, that is the question",
+   "source": "William Shakespeare, Hamlet"
   },
   {
-   "text": "Man is a mystery. It needs to be unravelled, and if you spend your whole life unravelling it, don't say that you've wasted time. I am studying that mystery because I want to be a human being"
+   "text": "This above all: to thine own self be true",
+   "source": "William Shakespeare, Hamlet"
   },
   {
-   "text": "A man is not called wise because he talks and talks again; but if he is peaceful, loving and fearless then he is in truth called wise"
+   "text": "there is nothing either good or bad but thinking makes it so.",
+   "source": "William Shakespeare, Hamlet"
   },
   {
-   "text": "You can search throughout the entire universe for someone who is more deserving of your love and affection than you are yourself, and that person is not to be found anywhere. You, yourself, as much as anybody in the entire universe, deserve your love and affection"
+   "text": "Tomorrow, and tomorrow, and tomorrow, Creeps in this petty pace from day to day, To the last syllable of recorded time; And all our yesterdays have lighted fools The way to dusty death. Out, out, brief candle! Life's but a walking shadow; a poor player, That struts and frets his hour upon the stage, And then is heard no more: it is a tale Told by an idiot, full of sound and fury, Signifying nothing.",
+   "source": "William Shakespeare, Macbeth"
   },
   {
-   "text": "Sometimes it's not enough to know what things mean, sometimes you have to know what things don't mean"
+   "text": "Curiouser and curiouser!",
+   "source": "Lewis Carroll, Alice's Adventures in Wonderland"
   },
   {
-   "text": "We seldom realize, for example that our most private thoughts and emotions are not actually our own. For we think in terms of languages and images which we did not invent, but which were given to us by our society"
+   "text": "Alice was beginning to get very tired of sitting by her sister on the bank, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, \"and what is the use of a book,\" thought Alice \"without pictures or conversations?\"",
+   "source": "Lewis Carroll, Alice's Adventures in Wonderland"
   },
   {
-   "text": "You will not be punished for your anger; you will be punished by your anger"
+   "text": "\"Begin at the beginning,\" the King said gravely, \"and go on till you come to the end: then stop.\"",
+   "source": "Lewis Carroll, Alice's Adventures in Wonderland"
   },
   {
-   "text": "If others tell us something we make assumptions, and if they don't tell us something we make assumptions to fulfill our need to know and to replace the need to communicate. Even if we hear something and we don't understand we make assumptions about what it means and then believe the assumptions. We make all sorts of assumptions because we don't have the courage to ask questions"
+   "text": "we're all mad here. I'm mad. You're mad.",
+   "source": "Lewis Carroll, Alice's Adventures in Wonderland"
   },
   {
-   "text": "I've come to believe that all my past failure and frustration were actually laying the foundation for the understandings that have created the new level of living I now enjoy"
+   "text": "The only way to get rid of a temptation is to yield to it.",
+   "source": "Oscar Wilde, The Picture of Dorian Gray"
   },
   {
-   "text": "The invariable mark of wisdom is to see the miraculous in the common"
+   "text": "there is only one thing in the world worse than being talked about, and that is not being talked about.",
+   "source": "Oscar Wilde, The Picture of Dorian Gray"
+  },
+  {
+   "text": "In vain have I struggled. It will not do. My feelings will not be repressed. You must allow me to tell you how ardently I admire and love you.",
+   "source": "Jane Austen, Pride and Prejudice"
+  },
+  {
+   "text": "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of Light, it was the season of Darkness, it was the spring of hope, it was the winter of despair, we had everything before us, we had nothing before us, we were all going direct to Heaven, we were all going direct the other way",
+   "source": "Charles Dickens, A Tale of Two Cities"
+  },
+  {
+   "text": "It is a far, far better thing that I do, than I have ever done; it is a far, far better rest that I go to than I have ever known.",
+   "source": "Charles Dickens, A Tale of Two Cities"
+  },
+  {
+   "text": "Beware, for I am fearless and therefore powerful.",
+   "source": "Mary Shelley, Frankenstein"
+  },
+  {
+   "text": "Nothing is so painful to the human mind as a great and sudden change.",
+   "source": "Mary Shelley, Frankenstein"
+  },
+  {
+   "text": "Life, although it may only be an accumulation of anguish, is dear to me, and I will defend it.",
+   "source": "Mary Shelley, Frankenstein"
+  },
+  {
+   "text": "Reader, I married him.",
+   "source": "Charlotte Brontë, Jane Eyre"
+  },
+  {
+   "text": "I am no bird; and no net ensnares me; I am a free human being with an independent will, which I now exert to leave you.",
+   "source": "Charlotte Brontë, Jane Eyre"
+  },
+  {
+   "text": "Women are supposed to be very calm generally: but women feel just as men feel; they need exercise for their faculties, and a field for their efforts, as much as their brothers do; they suffer from too rigid a restraint, too absolute a stagnation, precisely as men would suffer; and it is narrow-minded in their more privileged fellow-creatures to say that they ought to confine themselves to making puddings and knitting stockings, to playing on the piano and embroidering bags. It is thoughtless to condemn them, or laugh at them, if they seek to do more or learn more than custom has pronounced necessary for their sex.",
+   "source": "Charlotte Brontë, Jane Eyre"
+  },
+  {
+   "text": "The mass of men lead lives of quiet desperation.",
+   "source": "Henry David Thoreau, Walden"
+  },
+  {
+   "text": "If a man does not keep pace with his companions, perhaps it is because he hears a different drummer. Let him step to the music which he hears, however measured or far away.",
+   "source": "Henry David Thoreau, Walden"
+  },
+  {
+   "text": "Our life is frittered away by detail. An honest man has hardly need to count more than his ten fingers, or in extreme cases he may add his ten toes, and lump the rest. Simplicity, simplicity, simplicity! I say, let your affairs be as two or three, and not a hundred or a thousand; instead of a million count half a dozen, and keep your accounts on your thumb nail. In the midst of this chopping sea of civilized life, such are the clouds and storms and quicksands and thousand-and-one items to be allowed for, that a man has to live, if he would not founder and go to the bottom and not make his port at all, by dead reckoning, and he must be a great calculator indeed who succeeds. Simplify, simplify.",
+   "source": "Henry David Thoreau, Walden"
+  },
+  {
+   "text": "Rather than love, than money, than fame, give me truth.",
+   "source": "Henry David Thoreau, Walden"
+  },
+  {
+   "text": "Trust thyself: every heart vibrates to that iron string.",
+   "source": "Ralph Waldo Emerson, Self-Reliance"
+  },
+  {
+   "text": "A foolish consistency is the hobgoblin of little minds, adored by little statesmen and philosophers and divines.",
+   "source": "Ralph Waldo Emerson, Self-Reliance"
+  },
+  {
+   "text": "To be great is to be misunderstood.",
+   "source": "Ralph Waldo Emerson, Self-Reliance"
+  },
+  {
+   "text": "There is a time in every man's education when he arrives at the conviction that envy is ignorance; that imitation is suicide; that he must take himself for better for worse as his portion; that though the wide universe is full of good, no kernel of nourishing corn can come to him but through his toil bestowed on that plot of ground which is given to him to till.",
+   "source": "Ralph Waldo Emerson, Self-Reliance"
+  },
+  {
+   "text": "All warfare is based on deception.",
+   "source": "Sun Tzu, The Art of War (tr. Lionel Giles)"
+  },
+  {
+   "text": "If you know the enemy and know yourself, you need not fear the result of a hundred battles.",
+   "source": "Sun Tzu, The Art of War (tr. Lionel Giles)"
+  },
+  {
+   "text": "Whatever our souls are made of, his and mine are the same",
+   "source": "Emily Brontë, Wuthering Heights"
+  },
+  {
+   "text": "You see, but you do not observe.",
+   "source": "Arthur Conan Doyle, The Adventures of Sherlock Holmes"
+  },
+  {
+   "text": "It is a capital mistake to theorise before one has data.",
+   "source": "Arthur Conan Doyle, The Adventures of Sherlock Holmes"
+  },
+  {
+   "text": "It has long been an axiom of mine that the little things are infinitely the most important.",
+   "source": "Arthur Conan Doyle, The Adventures of Sherlock Holmes"
+  },
+  {
+   "text": "Welcome to my house! Enter freely and of your own will!",
+   "source": "Bram Stoker, Dracula"
+  },
+  {
+   "text": "Call me Ishmael. Some years ago-never mind how long precisely-having little or no money in my purse, and nothing particular to interest me on shore, I thought I would sail about a little and see the watery part of the world. It is a way I have of driving off the spleen and regulating the circulation.",
+   "source": "Herman Melville, Moby-Dick"
+  },
+  {
+   "text": "Happy families are all alike; every unhappy family is unhappy in its own way. Everything was in confusion in the Oblonskys' house. The wife had discovered that the husband was carrying on an intrigue with a French girl, who had been a governess in their family, and she had announced to her husband that she could not go on living in the same house with him.",
+   "source": "Leo Tolstoy, Anna Karenina (tr. Constance Garnett)"
+  },
+  {
+   "text": "So we beat on, boats against the current, borne back ceaselessly into the past.",
+   "source": "F. Scott Fitzgerald, The Great Gatsby"
+  },
+  {
+   "text": "Emma Woodhouse, handsome, clever, and rich, with a comfortable home and happy disposition, seemed to unite some of the best blessings of existence; and had lived nearly twenty-one years in the world with very little to distress or vex her.",
+   "source": "Jane Austen, Emma"
+  },
+  {
+   "text": "Four score and seven years ago, our fathers brought forth upon this continent a new nation: conceived in liberty, and dedicated to the proposition that all men are created equal.",
+   "source": "Abraham Lincoln, The Gettysburg Address"
+  },
+  {
+   "text": "There is no doubt that Marley was dead. This must be distinctly understood, or nothing wonderful can come of the story I am going to relate.",
+   "source": "Charles Dickens, A Christmas Carol"
+  },
+  {
+   "text": "I will honour Christmas in my heart, and try to keep it all the year.",
+   "source": "Charles Dickens, A Christmas Carol"
+  },
+  {
+   "text": "All children, except one, grow up.",
+   "source": "J. M. Barrie, Peter Pan"
+  },
+  {
+   "text": "To die will be an awfully big adventure.",
+   "source": "J. M. Barrie, Peter Pan"
+  },
+  {
+   "text": "Second to the right, and straight on till morning.",
+   "source": "J. M. Barrie, Peter Pan"
+  },
+  {
+   "text": "No matter how dreary and gray our homes are, we people of flesh and blood would rather live there than in any other country, be it ever so beautiful. There is no place like home.",
+   "source": "L. Frank Baum, The Wonderful Wizard of Oz"
+  },
+  {
+   "text": "I know not all that may be coming, but be it what it will, I'll go to it laughing.",
+   "source": "Herman Melville, Moby-Dick"
+  },
+  {
+   "text": "He had discovered a great law of human action, without knowing it-namely, that in order to make a man or a boy covet a thing, it is only necessary to make the thing difficult to attain.",
+   "source": "Mark Twain, The Adventures of Tom Sawyer"
+  },
+  {
+   "text": "Work consists of whatever a body is obliged to do, and that Play consists of whatever a body is not obliged to do.",
+   "source": "Mark Twain, The Adventures of Tom Sawyer"
+  },
+  {
+   "text": "Take nothing on its looks; take everything on evidence. There's no better rule.",
+   "source": "Charles Dickens, Great Expectations"
+  },
+  {
+   "text": "Let your plans be dark and impenetrable as night, and when you move, fall like a thunderbolt.",
+   "source": "Sun Tzu, The Art of War (tr. Lionel Giles)"
+  },
+  {
+   "text": "one must still have chaos in one, to give birth to a dancing star.",
+   "source": "Friedrich Nietzsche, Thus Spake Zarathustra (tr. Thomas Common)"
+  },
+  {
+   "text": "I went to the woods because I wished to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach, and not, when I came to die, discover that I had not lived. I did not wish to live what was not life, living is so dear; nor did I wish to practise resignation, unless it was quite necessary.",
+   "source": "Henry David Thoreau, Walden"
+  },
+  {
+   "text": "It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife. However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered as the rightful property of some one or other of their daughters.",
+   "source": "Jane Austen, Pride and Prejudice"
+  },
+  {
+   "text": "In my younger and more vulnerable years my father gave me some advice that I've been turning over in my mind ever since. \"Whenever you feel like criticizing anyone,\" he told me, \"just remember that all the people in this world haven't had the advantages that you've had.\"",
+   "source": "F. Scott Fitzgerald, The Great Gatsby"
+  },
+  {
+   "text": "Whoso would be a man, must be a nonconformist.",
+   "source": "Ralph Waldo Emerson, Self-Reliance"
+  },
+  {
+   "text": "We hold these truths to be self-evident, that all men are created equal, that they are endowed by their Creator with certain unalienable Rights, that among these are Life, Liberty, and the pursuit of Happiness. That to secure these rights, Governments are instituted among Men, deriving their just powers from the consent of the governed,",
+   "source": "The Declaration of Independence"
+  },
+  {
+   "text": "No one would have believed in the last years of the nineteenth century that this world was being watched keenly and closely by intelligences greater than man's and yet as mortal as his own; that as men busied themselves about their various concerns they were scrutinised and studied, perhaps almost as narrowly as a man with a microscope might scrutinise the transient creatures that swarm and multiply in a drop of water.",
+   "source": "H. G. Wells, The War of the Worlds"
+  },
+  {
+   "text": "You seek for knowledge and wisdom, as I once did; and I ardently hope that the gratification of your wishes may not be a serpent to sting you, as mine has been.",
+   "source": "Mary Shelley, Frankenstein"
+  },
+  {
+   "text": "life is infinitely stranger than anything which the mind of man could invent. We would not dare to conceive the things which are really mere commonplaces of existence.",
+   "source": "Arthur Conan Doyle, The Adventures of Sherlock Holmes"
+  },
+  {
+   "text": "isn't it nice to think that tomorrow is a new day with no mistakes in it yet?",
+   "source": "L. M. Montgomery, Anne of Green Gables"
+  },
+  {
+   "text": "\"Would you tell me, please, which way I ought to go from here?\" \"That depends a good deal on where you want to get to,\" said the Cat. \"I don't much care where-\" said Alice. \"Then it doesn't matter which way you go,\" said the Cat.",
+   "source": "Lewis Carroll, Alice's Adventures in Wonderland"
+  },
+  {
+   "text": "Oh! But he was a tight-fisted hand at the grind-stone, Scrooge! a squeezing, wrenching, grasping, scraping, clutching, covetous, old sinner! Hard and sharp as flint, from which no steel had ever struck out generous fire; secret, and self-contained, and solitary as an oyster.",
+   "source": "Charles Dickens, A Christmas Carol"
+  },
+  {
+   "text": "Going up that river was like traveling back to the earliest beginnings of the world, when vegetation rioted on the earth and the big trees were kings. An empty stream, a great silence, an impenetrable forest. The air was warm, thick, heavy, sluggish.",
+   "source": "Joseph Conrad, Heart of Darkness"
   }
  ],
  "korean": [
