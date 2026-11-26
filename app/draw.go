@@ -571,7 +571,7 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	}
 	if since := time.Since(u.openedAt); since < splashTime {
 		s.HideCursor()
-		c.splash(w, h, since, max(1, (h-8-lanes)/2)-len(logo)-1) // where the typing screen puts the logo
+		c.splash(w, h, since, max(1, (h-8-lanes)/2)-len(logo)-1, u.splash) // where the typing screen puts the logo
 		return
 	}
 

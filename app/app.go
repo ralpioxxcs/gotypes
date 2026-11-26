@@ -167,6 +167,7 @@ type ui struct {
 	lang       string
 	sel        int       // selected second on the result chart, -1 = last
 	openedAt   time.Time // session start, for the splash; zero = no splash
+	splash     string    // the splash effect, see splashStyles
 	finishedAt time.Time
 	gauge      gauge
 	chart      chartGeom // last drawn chart, for mouse hit-testing
@@ -514,6 +515,7 @@ func Play(ctx context.Context, s tcell.Screen, dir string, hub *race.Hub, name s
 	}
 	defer s.Fini()
 	u.openedAt = time.Now() // after Init, so terminal setup doesn't eat the splash
+	u.splash = splashStyles[rand.IntN(len(splashStyles))]
 	s.EnableMouse(tcell.MouseMotionEvents)
 	events, stop := make(chan tcell.Event, 16), make(chan struct{})
 	defer close(stop)

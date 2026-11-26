@@ -121,7 +121,6 @@ func TestSplashSweepsLogoThenAnyKeySkips(t *testing.T) {
 }
 
 func TestSplashStyles(t *testing.T) {
-	defer func(s string) { splashStyle = s }(splashStyle)
 	scr := tcell.NewSimulationScreen("UTF-8")
 	if err := scr.Init(); err != nil {
 		t.Fatal(err)
@@ -139,14 +138,13 @@ func TestSplashStyles(t *testing.T) {
 		return b.String()
 	}
 	c := canvas{scr, themes[0]}
-	for _, splashStyle = range []string{"", "drop", "typo", "scramble", "wave", "press", "fly"} {
+	for _, style := range append(splashStyles, "") {
 		for at := time.Duration(0); at < splashTime; at += 30 * time.Millisecond {
-			c.splash(80, 24, at, 5) // every frame draws without going out of range
+			c.splash(80, 24, at, 5, style) // every frame draws without going out of range
 		}
 	}
-	splashStyle = "typo"
 	c.fill(0, 0, 80, 24, c.st(c.th.text))
-	c.splash(80, 24, keyAt(3), 5)
+	c.splash(80, 24, keyAt(3), 5, "typo")
 	if r := row(11); !strings.Contains(r, "│ t ││ p │") {
 		t.Fatalf("typo: p typed in y's place: %q", r)
 	}

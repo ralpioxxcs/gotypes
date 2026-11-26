@@ -2,7 +2,6 @@ package app
 
 import (
 	"math"
-	"os"
 	"regexp"
 	"runtime/debug"
 	"strings"
@@ -168,18 +167,16 @@ const (
 	keyFlash   = 220 * time.Millisecond // a key lights up in the text color as it lands, then settles
 	scramble   = 350 * time.Millisecond // scramble: a key cycles random letters this long
 	waveTime   = 700 * time.Millisecond // wave: one shine sweep across the logo
-	flyTime    = 400 * time.Millisecond // fly: the logo glides up to the title row at the end
+	flyTime    = 400 * time.Millisecond // at the end the logo glides up to the title row
 )
 
-// splashStyle picks the splash effect: drop (default), typo, scramble, wave,
-// press or fly.
-// shortcut: env var GOTYPES_SPLASH to compare the effects; keep one and delete the rest once picked.
-var splashStyle = os.Getenv("GOTYPES_SPLASH")
+// splashStyles are the splash effects, one picked at random per start.
+var splashStyles = []string{"drop", "typo", "scramble", "wave", "press"}
 
 // splashSteps is what has been typed after each keystroke; the typo splash
 // hits p too early, shows it wrong and backspaces over it.
-func splashSteps() []string {
-	if splashStyle == "typo" {
+func splashSteps(style string) []string {
+	if style == "typo" {
 		return []string{"g", "go", "got", "gotp", "got", "goty", "gotyp", "gotype", "gotypes"}
 	}
 	var s []string
@@ -202,11 +199,11 @@ func keyAt(k int) time.Duration {
 // splash types the name in as if on a keyboard: the logo is split into one
 // slice per letter, each appearing on its keystroke with a flash, behind a
 // full-height caret that blinks once all are typed, the way a test looks
-// before the first key. splashStyle adds the effect; titleY is where the main
-// screen draws the logo (fly ends there). Without room for the logo, the name
+// before the first key. style adds an effect; at the end the logo glides up to
+// titleY, where the main screen draws it. Without room for the logo, the name
 // itself is typed.
-func (c canvas) splash(w, h int, since time.Duration, titleY int) {
-	steps := splashSteps()
+func (c canvas) splash(w, h int, since time.Duration, titleY int, style string) {
+	steps := splashSteps(style)
 	n := 0
 	for n < len(steps) && since >= keyAt(n) {
 		n++
@@ -220,7 +217,7 @@ func (c canvas) splash(w, h int, since time.Duration, titleY int) {
 	showCaret := !done || since/(300*time.Millisecond)%2 == 0
 	if lw, lh := logoWidth(), len(logo); lw+2 <= w && lh <= h {
 		x, y := min((w-lw)/2, w-lw-2), (h-lh)/2 // same column as the title, caret still fits
-		if t := since - (splashTime - flyTime); splashStyle == "fly" && titleY >= 1 && t > 0 {
+		if t := since - (splashTime - flyTime); titleY >= 1 && t > 0 {
 			p := float64(t) / float64(flyTime)
 			y += int(math.Round(float64(titleY-y) * (1 - (1-p)*(1-p)))) // ease out
 			showCaret = false
@@ -233,7 +230,7 @@ func (c canvas) splash(w, h int, since time.Duration, titleY int) {
 			age := since - keyAt(set)
 			letter, wrong := rune(buf[k]), buf[k] != splashName[k]
 			dy, flash := 0, age
-			switch splashStyle {
+			switch style {
 			case "", "drop":
 				p := min(float64(age)/float64(keyFall), 1)
 				dy, flash = int(math.Round(float64(-(y+lh))*(1-p*p))), age-keyFall // speeding up like a drop
@@ -243,7 +240,7 @@ func (c canvas) splash(w, h int, since time.Duration, titleY int) {
 				}
 				flash = age - scramble
 			case "press": // once typed, the keys go down one after another
-				if t := since - end - 300*time.Millisecond - time.Duration(k)*90*time.Millisecond; t >= 0 && t < 120*time.Millisecond {
+				if t := since - end - 150*time.Millisecond - time.Duration(k)*80*time.Millisecond; t >= 0 && t < 120*time.Millisecond {
 					dy = 1
 				}
 			}
@@ -257,7 +254,7 @@ func (c canvas) splash(w, h int, since time.Duration, titleY int) {
 				switch {
 				case wrong:
 					fg = c.th.err
-				case splashStyle == "wave" && done: // a bright band sweeping left to right
+				case style == "wave" && done: // a bright band sweeping left to right
 					pos := float64((since-end)%waveTime)/float64(waveTime)*float64(lw+8) - 4
 					fg = blend(c.th.text, fg, min(math.Abs(float64(col)-pos)/4, 1))
 				}
