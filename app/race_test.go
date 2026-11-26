@@ -33,12 +33,24 @@ func TestRace(t *testing.T) {
 	if a.quote.Text != "ab cd" || len(b.e.Words) != 2 {
 		t.Fatalf("both race the room's text: %q, %d words", a.quote.Text, len(b.e.Words))
 	}
+	enter := func(u *ui) { u.key(tcell.NewEventKey(tcell.KeyEnter, 0, tcell.ModNone)) }
+	c := join("c", hub) // never readies
+	enter(a)
+	enter(b)
+	if s := a.seat.Snapshot(); s.State != race.Counting || !s.Me().Ready {
+		t.Fatalf("enter readies; two ready players count down: %+v", s)
+	}
 	typ(a, "ab")
 	if a.e.Started {
 		t.Fatal("typing before the countdown ends must be ignored")
 	}
 
 	clk = clk.Add(race.Countdown + 4*time.Second)
+	c.quote.Text = "stale" // every room gets "ab cd", so mark c's old text to see the switch
+	c.report()
+	if s := c.seat.Snapshot(); s.State != race.Waiting || len(s.Players) != 1 || c.quote.Text != "ab cd" {
+		t.Fatalf("c was not ready: moved to a fresh room: %+v", s)
+	}
 	typ(a, "ab cd")
 	typ(b, "ab ")
 	p := b.seat.Snapshot().Players
@@ -50,7 +62,7 @@ func TestRace(t *testing.T) {
 	if p := a.seat.Snapshot().Players; !p[1].Left {
 		t.Fatalf("b's lane should show it left: %+v", p)
 	}
-	if s := b.seat.Snapshot(); s.State != race.Waiting || len(s.Players) != 1 {
-		t.Fatalf("tab during a race opens a fresh room: %+v", s)
+	if s := b.seat.Snapshot(); s.State != race.Waiting || len(s.Players) != 2 || s.Players[0].Name != "c" {
+		t.Fatalf("tab during a race joins the next room, where c waits: %+v", s)
 	}
 }

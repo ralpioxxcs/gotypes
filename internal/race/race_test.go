@@ -15,44 +15,59 @@ func newHub() (*Hub, *clock) {
 	return NewHub(func(lang string) (string, string) { n++; return lang + " text " + string(rune('0'+n)), "" }, c.now), c
 }
 
-func TestMatchAndCountdown(t *testing.T) {
+func ready(seats ...*Seat) {
+	for _, s := range seats {
+		s.SetReady(true)
+	}
+}
+
+func TestReadyAndCountdown(t *testing.T) {
 	h, c := newHub()
 	a := h.Join("alice", "english")
-	if s := a.Snapshot(); s.State != Waiting || len(s.Players) != 1 || !s.Players[0].Me {
-		t.Fatalf("alone should wait: %+v", s)
-	}
 	b := h.Join("alice", "english")
 	k := h.Join("kim", "korean")
-	sa, sb := a.Snapshot(), b.Snapshot()
-	if sa.State != Counting || !sa.Start.Equal(c.t.Add(Countdown)) || sa.Text != sb.Text {
-		t.Fatalf("second player starts the countdown on one text: %+v %+v", sa, sb)
+	sb := b.Snapshot()
+	if sb.State != Waiting || sb.Players[1].Name != "alice#2" || !sb.Players[1].Me || sb.Players[0].Me {
+		t.Fatalf("joined, not ready: wait; names unique, me marked: %+v", sb)
 	}
-	if sb.Players[1].Name != "alice#2" || !sb.Players[1].Me || sb.Players[0].Me {
-		t.Fatalf("names must be unique and me marked: %+v", sb.Players)
-	}
-	if sk := k.Snapshot(); sk.State != Waiting || sk.Text == sa.Text {
-		t.Fatalf("other language gets its own room: %+v", sk)
+	if k.Snapshot().Text == sb.Text {
+		t.Fatal("other language gets its own room")
 	}
 
-	b.Leave()
-	if s := a.Snapshot(); s.State != Waiting || len(s.Players) != 1 {
-		t.Fatalf("leaving before the start stops the countdown: %+v", s)
+	ready(a)
+	if a.Snapshot().State != Waiting {
+		t.Fatal("one ready player must not start the countdown")
 	}
-	b = h.Join("bob", "english")
-	a.Report(0.5, 80, false) // before the start: ignored
+	ready(b)
+	if s := a.Snapshot(); s.State != Counting || !s.Start.Equal(c.t.Add(Countdown)) || !s.Me().Ready {
+		t.Fatalf("two ready players start the countdown: %+v", s)
+	}
+	b.SetReady(false)
+	if a.Snapshot().State != Waiting {
+		t.Fatal("un-readying below two stops the countdown")
+	}
+	ready(b)
+	d := h.Join("dave", "english") // joins during the countdown, never readies
+	a.Report(0.5, 80, false)       // before the start: ignored
+
 	c.t = c.t.Add(Countdown)
-	if s := a.Snapshot(); s.State != Running || s.Players[0].Progress != 0 {
-		t.Fatalf("running, early report dropped: %+v", s)
+	s := a.Snapshot()
+	if s.State != Running || len(s.Players) != 2 || s.Players[0].Progress != 0 {
+		t.Fatalf("racing with only the ready players, early report dropped: %+v", s)
 	}
-	late := h.Join("carol", "english")
-	if late.Snapshot().Text == a.Snapshot().Text {
-		t.Fatal("joining a running race must open a new room")
+	sd := d.Snapshot()
+	if sd.State != Waiting || sd.Text == s.Text || len(sd.Players) != 1 || sd.Players[0].Name != "dave" {
+		t.Fatalf("unready player moves on to the next room: %+v", sd)
+	}
+	if late := h.Join("carol", "english").Snapshot(); late.Text != sd.Text || len(late.Players) != 2 {
+		t.Fatalf("late joiner meets dave in the next room: %+v", late)
 	}
 }
 
 func TestFinishOrderAndLeaving(t *testing.T) {
 	h, c := newHub()
 	a, b, d := h.Join("a", "en"), h.Join("b", "en"), h.Join("d", "en")
+	ready(a, b, d)
 	c.t = c.t.Add(Countdown + 3*time.Second)
 	b.Report(1, 90, true)
 	c.t = c.t.Add(2 * time.Second)

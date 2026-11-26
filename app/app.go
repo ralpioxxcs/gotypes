@@ -191,8 +191,6 @@ func (u *ui) restart() {
 		u.mode = 1 // words 30
 	}
 	m := modes[u.mode]
-	words := u.lists[u.lang]
-	next := func() string { return words[rand.IntN(len(words))] }
 	u.quote = quote{}
 	u.leave()
 	switch {
@@ -204,6 +202,14 @@ func (u *ui) restart() {
 		qs := u.quotesFor(m.quote)
 		u.quote = qs[rand.IntN(len(qs))]
 	}
+	u.reset()
+}
+
+// reset starts a fresh test on u.quote, or on random words without one.
+func (u *ui) reset() {
+	m := modes[u.mode]
+	words := u.lists[u.lang]
+	next := func() string { return words[rand.IntN(len(words))] }
 	if u.quote.Text != "" {
 		ws := strings.Fields(u.quote.Text)
 		m.N = len(ws)
@@ -229,10 +235,15 @@ func (u *ui) leave() {
 // held is true while a race has not started: typing waits for the countdown.
 func (u *ui) held() bool { return u.seat != nil && u.seat.Snapshot().State != race.Running }
 
-// report sends this player's lane to the room.
+// report sends this player's lane to the room, and follows the player to the
+// next room's text if the race started without them.
 func (u *ui) report() {
 	if u.seat == nil {
 		return
+	}
+	if snap := u.seat.Snapshot(); snap.Text != u.quote.Text {
+		u.quote = quote{snap.Text, snap.Source}
+		u.reset()
 	}
 	e := u.e
 	speed := e.WPM()
@@ -386,6 +397,9 @@ func (u *ui) key(ev *tcell.EventKey) {
 		return
 	}
 	if k := ev.Key(); u.held() && k != tcell.KeyTab && k != tcell.KeyEscape {
+		if k == tcell.KeyEnter {
+			u.seat.SetReady(!u.seat.Snapshot().Me().Ready)
+		}
 		return
 	}
 	switch ev.Key() {

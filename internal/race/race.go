@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	Countdown  = 10 * time.Second // from the second player joining to the start
+	Countdown  = 10 * time.Second // from the second ready player to the start
 	MaxPlayers = 8
 	nameLen    = 12
 )
@@ -19,19 +19,21 @@ const (
 type State int
 
 const (
-	Waiting  State = iota // fewer than 2 players
+	Waiting  State = iota // fewer than 2 ready players
 	Counting              // start is set, not reached yet
 	Running
 )
 
 type Player struct {
 	Name     string
+	Ready    bool          // only ready players race; the rest move to the next room at the start
 	Progress float64       // 0..1
 	Speed    float64       // wpm, or 타/분 in a Korean room
 	Time     time.Duration // finish time since the start, 0 = still typing
 	Place    int           // 1 = first to finish, 0 = not finished
 	Left     bool          // disconnected mid-race; kept so the lanes stay put
 	Me       bool          // set in snapshots for the reader's own lane
+	base     string        // cleaned name before de-duplication, for moving rooms
 }
 
 type Snapshot struct {
@@ -39,7 +41,17 @@ type Snapshot struct {
 	Text    string
 	Source  string
 	Start   time.Time // zero while waiting
-	Players []Player  // join order
+	Players []Player  // join order; once running, only the racers
+}
+
+// Me is the reader's own entry.
+func (s Snapshot) Me() Player {
+	for _, p := range s.Players {
+		if p.Me {
+			return p
+		}
+	}
+	return Player{}
 }
 
 type room struct {
@@ -78,24 +90,75 @@ func (r *room) state(now time.Time) State {
 	return Running
 }
 
-// Join puts a player in the open room for lang, opening one if that is full
-// or already racing.
+// Join puts a player, not ready yet, in the open room for lang.
 func (h *Hub) Join(name, lang string) *Seat {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	now := h.now()
+	s := &Seat{h: h, p: &Player{base: clean(name)}}
+	h.seat(s, lang)
+	return s
+}
+
+// seat places s in the open room for lang, opening one if that is full or
+// already racing. Callers hold h.mu.
+func (h *Hub) seat(s *Seat, lang string) {
 	r := h.open[lang]
-	if r == nil || r.state(now) == Running || len(r.players) >= MaxPlayers {
+	if r == nil || r.state(h.now()) == Running || len(r.players) >= MaxPlayers {
 		text, source := h.pick(lang)
 		r = &room{lang: lang, text: text, source: source}
 		h.open[lang] = r
 	}
-	p := &Player{Name: r.unique(clean(name))}
-	r.players = append(r.players, p)
-	if len(r.players) == 2 {
+	s.p.Name = r.unique(s.p.base)
+	r.players = append(r.players, s.p)
+	s.r = r
+}
+
+// settle moves a player who was not ready when the race started on to the
+// next room. Callers hold h.mu; every Seat method settles first.
+func (s *Seat) settle() {
+	if s.r.state(s.h.now()) == Running && !s.p.Ready {
+		s.r.remove(s.p)
+		s.h.seat(s, s.r.lang)
+	}
+}
+
+func (r *room) remove(p *Player) {
+	for i, q := range r.players {
+		if q == p {
+			r.players = append(r.players[:i], r.players[i+1:]...)
+			return
+		}
+	}
+}
+
+// recount starts the countdown at two ready players and stops it below that.
+func (r *room) recount(now time.Time) {
+	if r.state(now) == Running {
+		return
+	}
+	n := 0
+	for _, p := range r.players {
+		if p.Ready {
+			n++
+		}
+	}
+	switch {
+	case n < 2:
+		r.start = time.Time{}
+	case r.start.IsZero():
 		r.start = now.Add(Countdown)
 	}
-	return &Seat{h, r, p}
+}
+
+// SetReady marks the player ready or not; it has no effect once racing.
+func (s *Seat) SetReady(ready bool) {
+	s.h.mu.Lock()
+	defer s.h.mu.Unlock()
+	s.settle()
+	if s.r.state(s.h.now()) != Running {
+		s.p.Ready = ready
+		s.r.recount(s.h.now())
+	}
 }
 
 // clean keeps a name to letters, digits, '-', '_' and '.', at most nameLen runes.
@@ -136,6 +199,7 @@ func (r *room) unique(name string) string {
 func (s *Seat) Report(progress, speed float64, finished bool) {
 	s.h.mu.Lock()
 	defer s.h.mu.Unlock()
+	s.settle()
 	now := s.h.now()
 	if s.r.state(now) != Running || s.p.Place > 0 || s.p.Left {
 		return
@@ -150,9 +214,13 @@ func (s *Seat) Report(progress, speed float64, finished bool) {
 func (s *Seat) Snapshot() Snapshot {
 	s.h.mu.Lock()
 	defer s.h.mu.Unlock()
+	s.settle()
 	r := s.r
 	snap := Snapshot{State: r.state(s.h.now()), Text: r.text, Source: r.source, Start: r.start}
 	for _, p := range r.players {
+		if snap.State == Running && !p.Ready {
+			continue // about to move on; see settle
+		}
 		cp := *p
 		cp.Me = p == s.p
 		snap.Players = append(snap.Players, cp)
@@ -160,23 +228,16 @@ func (s *Seat) Snapshot() Snapshot {
 	return snap
 }
 
-// Leave frees the seat: before the start the player is removed (and the
-// countdown stops if one player is left), during the race the lane stays.
+// Leave frees the seat: a racer's lane stays marked as left, anyone else is
+// removed (which may stop the countdown).
 func (s *Seat) Leave() {
 	s.h.mu.Lock()
 	defer s.h.mu.Unlock()
-	r := s.r
-	if r.state(s.h.now()) == Running {
+	s.settle()
+	if s.r.state(s.h.now()) == Running {
 		s.p.Left = true
 		return
 	}
-	for i, p := range r.players {
-		if p == s.p {
-			r.players = append(r.players[:i], r.players[i+1:]...)
-			break
-		}
-	}
-	if len(r.players) < 2 {
-		r.start = time.Time{}
-	}
+	s.r.remove(s.p)
+	s.r.recount(s.h.now())
 }

@@ -274,39 +274,97 @@ func (c canvas) meter(g gauge, unit string, x, y, w int) {
 	c.print(x+bw+2, y, label, c.st(c.th.main).Bold(true))
 }
 
-// lanes draws one row per racer: name, progress bar, then live speed, or place
-// and time once finished.
-func (c canvas) lanes(snap race.Snapshot, unit string, x, y, w int) {
-	const nameW, labelW = 12, 12
-	bw := w - nameW - 2 - labelW
-	track := blend(c.th.sub, c.th.bg, 0.7)
+// players draws the room as a titled box, one row per player; your row is
+// highlighted. Before the start a row shows ready or not; during the race a
+// progress bar and live speed, then place and time.
+func (c canvas) players(snap race.Snapshot, unit string, x, y, w int) {
+	th := c.th
+	const nameW, labelW = 12, 10
+	n := len(snap.Players)
+	c.box(x, y, w, n+2, c.st(th.sub))
+	title := fmt.Sprintf(" players %d/%d ", n, race.MaxPlayers)
+	if snap.State == race.Running {
+		title = " race "
+	}
+	c.print(x+2, y, title, c.st(th.text).Bold(true))
+
+	ix, iw := x+2, w-4 // inside the border, one cell of padding
+	bx, bw := ix+2+nameW+1, iw-2-nameW-1-labelW-1
+	track := blend(th.sub, th.bg, 0.7)
 	for i, p := range snap.Players {
-		st, col := c.st(c.th.sub), c.th.sub
+		yy := y + 1 + i
+		bg := th.bg
 		if p.Me {
-			st, col = c.st(c.th.text).Bold(true), c.th.main
+			bg = th.subAlt
+			c.fill(x+1, yy, w-2, 1, c.st(th.text).Background(bg))
 		}
-		c.print(x, y+i, runewidth.Truncate(p.Name, nameW, ""), st)
-		fill := p.Progress * float64(bw)
-		for j := range bw {
-			switch f := fill - float64(j); {
-			case f >= 1:
-				c.put(x+nameW+2+j, y+i, '█', c.st(col))
-			case f > 0 && int(f*8) > 0:
-				c.put(x+nameW+2+j, y+i, eighths[int(f*8)], c.st(col))
-			default:
-				c.put(x+nameW+2+j, y+i, '─', c.st(track))
-			}
+		st := func(fg tcell.Color) tcell.Style { return c.st(fg).Background(bg) }
+		name := st(th.text)
+		if p.Me {
+			name = st(th.main).Bold(true)
 		}
-		label := fmt.Sprintf("%.0f %s", p.Speed, unit)
+		mark, markCol := '○', th.sub
+		switch {
+		case p.Left:
+			mark, markCol = '×', th.err
+		case p.Ready:
+			mark, markCol = '●', th.main
+		}
+		c.put(ix, yy, mark, st(markCol))
+		c.print(ix+2, yy, runewidth.Truncate(p.Name, nameW, "…"), name)
+
+		label, labelSt := "not ready", st(th.sub)
 		switch {
 		case p.Left:
 			label = "left"
 		case p.Place > 0:
-			label = fmt.Sprintf("%s %.1fs", ordinal(p.Place), p.Time.Seconds())
-		case snap.State != race.Running:
-			label = "ready"
+			label, labelSt = fmt.Sprintf("%s %.1fs", ordinal(p.Place), p.Time.Seconds()), st(th.main).Bold(true)
+		case snap.State == race.Running:
+			label, labelSt = fmt.Sprintf("%.0f %s", p.Speed, unit), st(th.text)
+		case p.Ready:
+			label, labelSt = "ready", st(th.main).Bold(true)
 		}
-		c.print(x+w-labelW+1, y+i, label, st)
+		c.print(ix+iw-runewidth.StringWidth(label), yy, label, labelSt)
+
+		if snap.State != race.Running || bw < 4 {
+			continue
+		}
+		col := th.sub
+		if p.Me {
+			col = th.main
+		}
+		fill := p.Progress * float64(bw)
+		for j := range bw {
+			switch f := fill - float64(j); {
+			case f >= 1:
+				c.put(bx+j, yy, '█', st(col))
+			case f > 0 && int(f*8) > 0:
+				c.put(bx+j, yy, eighths[int(f*8)], st(col))
+			default:
+				c.put(bx+j, yy, '─', st(track))
+			}
+		}
+	}
+}
+
+// raceStatus is the line above the text before typing starts.
+func (c canvas) raceStatus(snap race.Snapshot, x, y int) {
+	ready := snap.Me().Ready
+	hi, dim := c.st(c.th.main).Bold(true), c.st(c.th.sub)
+	switch snap.State {
+	case race.Waiting:
+		if ready {
+			c.print(x, y, "waiting for another ready player…", dim)
+		} else {
+			c.print(x, y, "press enter when you're ready", hi)
+		}
+	case race.Counting:
+		xx := c.print(x, y, fmt.Sprintf("starting in %d", int(math.Ceil(time.Until(snap.Start).Seconds()))), hi)
+		if !ready {
+			c.print(xx, y, "   press enter to join", dim)
+		}
+	default:
+		c.print(x, y, "go!", hi)
 	}
 }
 
@@ -509,7 +567,7 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	lanes := 0 // rows the race lanes take, with a gap above
 	if u.seat != nil {
 		snap = u.seat.Snapshot()
-		lanes = len(snap.Players) + 1
+		lanes = len(snap.Players) + 3 // box borders and a gap above
 	}
 
 	s.HideCursor()
@@ -520,16 +578,11 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		case e.Started:
 			c.print(x0, y0+3, progress(e), c.st(th.main).Bold(true))
 			c.meter(u.gauge, unit, x0+12, y0+3, cw-12)
-		case snap.State == race.Waiting && u.seat != nil:
-			c.print(x0, y0+3, "waiting for another racer…", c.st(th.sub))
-		case snap.State == race.Counting:
-			left := int(math.Ceil(time.Until(snap.Start).Seconds()))
-			c.print(x0, y0+3, fmt.Sprintf("starting in %d", left), c.st(th.main).Bold(true))
 		case u.seat != nil:
-			c.print(x0, y0+3, "go!", c.st(th.main).Bold(true))
+			c.raceStatus(snap, x0, y0+3)
 		}
-		if lanes > 0 {
-			c.lanes(snap, unit, x0, y0+9, cw)
+		if u.seat != nil {
+			c.players(snap, unit, x0, y0+9, cw)
 		}
 		var cx, cy int
 		if u.tape {
@@ -540,7 +593,14 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		if u.korean() && !u.menuOpen {
 			s.ShowCursor(cx, cy) // the IME draws its in-progress syllable at the terminal cursor
 		}
-		c.hints(w, h-2, "tab", "restart", "esc", "menu", "ctrl+c", "quit")
+		switch {
+		case u.held() && snap.Me().Ready:
+			c.hints(w, h-2, "enter", "not ready", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
+		case u.held():
+			c.hints(w, h-2, "enter", "ready", "tab", "new room", "esc", "menu", "ctrl+c", "quit")
+		default:
+			c.hints(w, h-2, "tab", "restart", "esc", "menu", "ctrl+c", "quit")
+		}
 	} else {
 		y0 := max(1, (h-24-lanes)/2)
 		c.modeBar(u, x0, y0, cw)
@@ -570,8 +630,8 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		}
 		chY := y0 + 13
 		if lanes > 0 {
-			c.lanes(snap, unit, x0, chY, cw)
-			chY += lanes + 1 // gap and the chart's tooltip row
+			c.players(snap, unit, x0, chY, cw)
+			chY += lanes + 1 // box, gap and the chart's tooltip row
 		}
 		chH := min(8, h-5-chY) // room for error row, x labels, hints
 		u.chart = c.chart(e.PerSecond(), u.sel, time.Since(u.finishedAt), x0, chY, cw, chH)
