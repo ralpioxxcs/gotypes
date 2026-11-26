@@ -22,6 +22,33 @@ func (c canvas) st(fg tcell.Color) tcell.Style {
 
 func rw(r rune) int { return max(1, runewidth.RuneWidth(r)) }
 
+// frame collects one draw and hands each cell to the screen once at the end.
+// tcell resends a cell whose text changed during a frame even when it ends up
+// as before, so clearing and then drawing on the screen itself would resend
+// every glyph each frame (~5KB at 30fps, which lags over SSH).
+type frame struct {
+	tcell.Screen
+	w, h  int
+	cells []frameCell
+}
+
+type frameCell struct {
+	r  rune
+	st tcell.Style
+}
+
+func (f *frame) SetContent(x, y int, r rune, _ []rune, st tcell.Style) {
+	if x >= 0 && y >= 0 && x < f.w && y < f.h {
+		f.cells[y*f.w+x] = frameCell{r, st}
+	}
+}
+
+func (f *frame) flush() {
+	for i, c := range f.cells {
+		f.Screen.SetContent(i%f.w, i/f.w, c.r, nil, c.st)
+	}
+}
+
 func (c canvas) put(x, y int, r rune, st tcell.Style) int {
 	c.s.SetContent(x, y, r, nil, st)
 	return rw(r)
@@ -561,7 +588,9 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	if u.menuOpen && u.menuCat == catTheme && sel >= 0 {
 		th = themes[themeIndex(list[sel])] // live preview
 	}
-	c := canvas{s, th}
+	f := &frame{Screen: s, w: w, h: h, cells: make([]frameCell, w*h)}
+	defer f.flush()
+	c := canvas{f, th}
 	c.fill(0, 0, w, h, c.st(th.text))
 	cw := min(w-4, 80)
 	x0 := (w - cw) / 2

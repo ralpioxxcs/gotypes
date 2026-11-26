@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"io"
 	"runtime"
 	"strings"
 	"sync"
@@ -190,5 +191,46 @@ func TestModeBarClicksAndQuoteSource(t *testing.T) {
 	click("quote short") // the "quote" label picks its first length
 	if s := draw(); modes[u.mode].name() != "quote short" || !strings.Contains(s, "— Someone, Some Book") {
 		t.Fatalf("quote mode should show its source under the text: %s", modes[u.mode].name())
+	}
+}
+
+// countTty is a terminal that only counts what is written to it.
+type countTty struct {
+	n    int
+	stop chan struct{}
+}
+
+func (f *countTty) Read([]byte) (int, error)    { <-f.stop; return 0, io.EOF }
+func (f *countTty) Write(p []byte) (int, error) { f.n += len(p); return len(p), nil }
+func (f *countTty) Close() error                { return nil }
+func (f *countTty) Start() error                { return nil }
+func (f *countTty) Stop() error                 { return nil }
+func (f *countTty) Drain() error                { return nil }
+func (f *countTty) NotifyResize(func())         {}
+func (f *countTty) WindowSize() (tcell.WindowSize, error) {
+	return tcell.WindowSize{Width: 80, Height: 24}, nil
+}
+
+func TestUnchangedFrameSendsAlmostNothing(t *testing.T) {
+	tty := &countTty{stop: make(chan struct{})}
+	ti, _ := tcell.LookupTerminfo("xterm-256color")
+	s, err := tcell.NewTerminfoScreenFromTtyTerminfo(tty, ti)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Init(); err != nil {
+		t.Fatal(err)
+	}
+	defer s.Fini()
+	defer close(tty.stop) // runs first: lets tcell's reader end so Fini returns
+	u := &ui{lists: map[string][]string{"english": {"word"}}, langs: []string{"english"}, lang: "english", mode: 1}
+	u.restart()
+	u.draw(s, 80, 24)
+	s.Show()
+	before := tty.n
+	u.draw(s, 80, 24) // same screen again, as every idle tick does
+	s.Show()
+	if sent := tty.n - before; sent > 100 {
+		t.Fatalf("an unchanged frame resent %d bytes; over SSH that is lag", sent)
 	}
 }
