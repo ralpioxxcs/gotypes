@@ -51,7 +51,7 @@ func TestLogoOnlyWhenItFits(t *testing.T) {
 	has := func() bool {
 		cells, w, h := scr.GetContents()
 		for i := range w * h {
-			if len(cells[i].Runes) > 0 && cells[i].Runes[0] == '■' {
+			if len(cells[i].Runes) > 0 && cells[i].Runes[0] == '█' {
 				return true
 			}
 		}
@@ -60,13 +60,31 @@ func TestLogoOnlyWhenItFits(t *testing.T) {
 	for _, tc := range []struct {
 		w, y0 int
 		want  bool
-	}{{100, 10, true}, {100, 7, false}, {60, 10, false}} {
+	}{{100, 10, true}, {100, len(logo), false}, {20, 10, false}} {
 		scr.SetSize(tc.w, 30)
 		scr.Clear()
 		c.logo(tc.w, tc.y0)
 		scr.Show()
 		if has() != tc.want {
 			t.Errorf("w=%d y0=%d: logo drawn = %v", tc.w, tc.y0, !tc.want)
+		}
+	}
+}
+
+func TestShortVersion(t *testing.T) {
+	for _, tc := range []struct {
+		v, rev string
+		dirty  bool
+		want   string
+	}{
+		{"v1.2.0", "abcdef1234", false, "v1.2.0"},
+		{"v1.2.0+dirty", "abcdef1234", true, "v1.2.0"},
+		{"v0.0.0-20261126013012-a627968e7f1c", "a627968e7f1c00", false, "a627968"},
+		{"v1.2.1-0.20261126013012-a627968e7f1c+dirty", "a627968e7f1c00", true, "a627968*"},
+		{"(devel)", "", false, "dev"},
+	} {
+		if got := shortVersion(tc.v, tc.rev, tc.dirty); got != tc.want {
+			t.Errorf("shortVersion(%q, %q, %v) = %q, want %q", tc.v, tc.rev, tc.dirty, got, tc.want)
 		}
 	}
 }
