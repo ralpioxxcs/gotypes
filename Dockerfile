@@ -14,7 +14,7 @@ COPY --from=builder /gotypes /gotypes
 # host key and players' saved data; owned by the unprivileged user below
 COPY --from=builder --chown=65532:65532 /data /data
 USER 65532:65532
-VOLUME /data
+# no VOLUME line: Railway rejects it; mount /data with -v (or a Railway volume)
 EXPOSE 2222
 
 # play here:     docker run -it --rm -e TERM=xterm-256color <image>
