@@ -19,6 +19,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/gdamore/tcell/v2/terminfo"
 	"github.com/ralpioxxcs/gotypes/app"
+	"github.com/ralpioxxcs/gotypes/internal/race"
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/time/rate"
 )
@@ -42,7 +43,7 @@ func New(cfg Config) (*ssh.Server, error) {
 		wish.WithKeyboardInteractiveAuth(func(ssh.Context, gossh.KeyboardInteractiveChallenge) bool { return true }),
 		// listed innermost first: logging runs first, play last
 		wish.WithMiddleware(
-			play(cfg.DataDir),
+			play(cfg.DataDir, race.NewHub(app.RaceText, time.Now)),
 			activeterm.Middleware(), // no PTY, no game
 			limit(cfg.MaxSessions),
 			ratelimiter.Middleware(ratelimiter.NewRateLimiter(rate.Every(time.Second), 10, 1000)), // per IP
@@ -85,7 +86,7 @@ func limit(max int) wish.Middleware {
 	}
 }
 
-func play(dataDir string) wish.Middleware {
+func play(dataDir string, hub *race.Hub) wish.Middleware {
 	return func(next ssh.Handler) ssh.Handler {
 		return func(s ssh.Session) {
 			if len(s.Command()) > 0 {
@@ -101,7 +102,7 @@ func play(dataDir string) wish.Middleware {
 			}()
 			scr, err := tcell.NewTerminfoScreenFromTtyTerminfo(tty, terminfoFor(pty.Term, s.Environ()))
 			if err == nil {
-				err = app.Play(s.Context(), scr, userDir(dataDir, s.PublicKey()))
+				err = app.Play(s.Context(), scr, userDir(dataDir, s.PublicKey()), hub, s.User())
 			}
 			if err != nil {
 				log.Printf("gotypes: session %s: %v", s.RemoteAddr(), err)

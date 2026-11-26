@@ -151,3 +151,21 @@ func TestUserDir(t *testing.T) {
 		t.Fatalf("unexpected dir %q", dir)
 	}
 }
+
+func TestRaceOverSSH(t *testing.T) {
+	addr := start(t, 5)
+	joinRace := func() *syncBuf {
+		_, in, out := game(t, dial(t, addr))
+		waitOutput(t, out, "words")
+		for _, k := range []string{"\x1b", "\r", "race", "\r"} { // menu, mode, search, pick
+			in.Write([]byte(k))
+			time.Sleep(100 * time.Millisecond) // a lone ESC needs a pause to not read as Alt
+		}
+		return out
+	}
+	a := joinRace()
+	waitOutput(t, a, "waiting for another racer")
+	b := joinRace()
+	waitOutput(t, a, "starting in")
+	waitOutput(t, b, "player#2") // both named after the ssh user, made unique
+}

@@ -53,7 +53,7 @@ func TestPlaySessionsEndWithoutLeaks(t *testing.T) {
 		s := newSim()
 		ctx, cancel := context.WithCancel(context.Background())
 		done := make(chan error)
-		go func() { done <- Play(ctx, s, "") }()
+		go func() { done <- Play(ctx, s, "", nil, "") }()
 		started(t, s)
 		cancel() // like an SSH client disconnecting
 		if err := <-done; err != nil {
@@ -66,7 +66,7 @@ func TestPlaySessionsEndWithoutLeaks(t *testing.T) {
 func TestPlayQuitsOnCtrlC(t *testing.T) {
 	s := newSim()
 	done := make(chan error)
-	go func() { done <- Play(context.Background(), s, "") }()
+	go func() { done <- Play(context.Background(), s, "", nil, "") }()
 	started(t, s)
 	s.InjectKey(tcell.KeyCtrlC, 0, tcell.ModNone)
 	select {

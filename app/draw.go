@@ -8,6 +8,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/mattn/go-runewidth"
 	"github.com/ralpioxxcs/gotypes/internal/engine"
+	"github.com/ralpioxxcs/gotypes/internal/race"
 )
 
 type canvas struct {
@@ -273,6 +274,49 @@ func (c canvas) meter(g gauge, unit string, x, y, w int) {
 	c.print(x+bw+2, y, label, c.st(c.th.main).Bold(true))
 }
 
+// lanes draws one row per racer: name, progress bar, then live speed, or place
+// and time once finished.
+func (c canvas) lanes(snap race.Snapshot, unit string, x, y, w int) {
+	const nameW, labelW = 12, 12
+	bw := w - nameW - 2 - labelW
+	track := blend(c.th.sub, c.th.bg, 0.7)
+	for i, p := range snap.Players {
+		st, col := c.st(c.th.sub), c.th.sub
+		if p.Me {
+			st, col = c.st(c.th.text).Bold(true), c.th.main
+		}
+		c.print(x, y+i, runewidth.Truncate(p.Name, nameW, ""), st)
+		fill := p.Progress * float64(bw)
+		for j := range bw {
+			switch f := fill - float64(j); {
+			case f >= 1:
+				c.put(x+nameW+2+j, y+i, '█', c.st(col))
+			case f > 0 && int(f*8) > 0:
+				c.put(x+nameW+2+j, y+i, eighths[int(f*8)], c.st(col))
+			default:
+				c.put(x+nameW+2+j, y+i, '─', c.st(track))
+			}
+		}
+		label := fmt.Sprintf("%.0f %s", p.Speed, unit)
+		switch {
+		case p.Left:
+			label = "left"
+		case p.Place > 0:
+			label = fmt.Sprintf("%s %.1fs", ordinal(p.Place), p.Time.Seconds())
+		case snap.State != race.Running:
+			label = "ready"
+		}
+		c.print(x+w-labelW+1, y+i, label, st)
+	}
+}
+
+func ordinal(n int) string {
+	if s := map[int]string{1: "st", 2: "nd", 3: "rd"}[n]; s != "" {
+		return fmt.Sprint(n, s)
+	}
+	return fmt.Sprint(n, "th")
+}
+
 // chartGeom maps screen columns back to seconds for mouse hover.
 type chartGeom struct{ x, y, h, dw, n int }
 
@@ -457,18 +501,35 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	cw := min(w-4, 80)
 	x0 := (w - cw) / 2
 	e := u.e
+	unit := "wpm"
+	if u.korean() {
+		unit = "타/분"
+	}
+	var snap race.Snapshot
+	lanes := 0 // rows the race lanes take, with a gap above
+	if u.seat != nil {
+		snap = u.seat.Snapshot()
+		lanes = len(snap.Players) + 1
+	}
 
 	s.HideCursor()
 	if !e.Finished {
-		y0 := max(1, (h-8)/2)
+		y0 := max(1, (h-8-lanes)/2)
 		c.modeBar(u, x0, y0, cw)
-		if e.Started {
+		switch {
+		case e.Started:
 			c.print(x0, y0+3, progress(e), c.st(th.main).Bold(true))
-			unit := "wpm"
-			if u.korean() {
-				unit = "타/분"
-			}
 			c.meter(u.gauge, unit, x0+12, y0+3, cw-12)
+		case snap.State == race.Waiting && u.seat != nil:
+			c.print(x0, y0+3, "waiting for another racer…", c.st(th.sub))
+		case snap.State == race.Counting:
+			left := int(math.Ceil(time.Until(snap.Start).Seconds()))
+			c.print(x0, y0+3, fmt.Sprintf("starting in %d", left), c.st(th.main).Bold(true))
+		case u.seat != nil:
+			c.print(x0, y0+3, "go!", c.st(th.main).Bold(true))
+		}
+		if lanes > 0 {
+			c.lanes(snap, unit, x0, y0+9, cw)
 		}
 		var cx, cy int
 		if u.tape {
@@ -481,16 +542,16 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		}
 		c.hints(w, h-2, "tab", "restart", "esc", "menu", "ctrl+c", "quit")
 	} else {
-		y0 := max(1, (h-24)/2)
+		y0 := max(1, (h-24-lanes)/2)
 		c.modeBar(u, x0, y0, cw)
 		if u.quote.Source != "" {
 			c.print(x0, y0+1, "— "+u.quote.Source, c.st(th.sub))
 		}
-		label, speed, detail := "wpm", e.WPM(), ""
+		speed, detail := e.WPM(), ""
 		if u.korean() {
-			label, speed, detail = "타/분", e.Taja(), fmt.Sprintf("wpm %.0f   ", e.WPM())
+			speed, detail = e.Taja(), fmt.Sprintf("wpm %.0f   ", e.WPM())
 		}
-		c.print(x0, y0+3, label, c.st(th.sub))
+		c.print(x0, y0+3, unit, c.st(th.sub))
 		c.print(x0+18, y0+3, "acc", c.st(th.sub))
 		c.big(x0, y0+4, fmt.Sprintf("%.0f", speed), c.st(th.main))
 		c.big(x0+18, y0+4, fmt.Sprintf("%.0f%%", e.Accuracy()), c.st(th.main))
@@ -507,8 +568,13 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		default:
 			c.print(x0, y0+11, fmt.Sprintf("personal best %.0f", u.prevBest), c.st(th.sub))
 		}
-		chH := min(8, h-5-(y0+13)) // room for error row, x labels, hints
-		u.chart = c.chart(e.PerSecond(), u.sel, time.Since(u.finishedAt), x0, y0+13, cw, chH)
+		chY := y0 + 13
+		if lanes > 0 {
+			c.lanes(snap, unit, x0, chY, cw)
+			chY += lanes + 1 // gap and the chart's tooltip row
+		}
+		chH := min(8, h-5-chY) // room for error row, x labels, hints
+		u.chart = c.chart(e.PerSecond(), u.sel, time.Since(u.finishedAt), x0, chY, cw, chH)
 		c.hints(w, h-2, "←/→", "inspect", "tab", "restart", "esc", "menu", "ctrl+c", "quit")
 	}
 

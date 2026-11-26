@@ -16,6 +16,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/ralpioxxcs/gotypes/data"
 	"github.com/ralpioxxcs/gotypes/internal/engine"
+	"github.com/ralpioxxcs/gotypes/internal/race"
 )
 
 // mode is a words/time test, or one quote of a length class; restart turns a
@@ -23,16 +24,20 @@ import (
 type mode struct {
 	engine.Mode
 	quote string // "short" | "medium" | "long", empty for words/time
+	race  bool   // a room's text against other SSH players
 }
 
 var modes = []mode{
 	{Mode: engine.Mode{N: 15}}, {Mode: engine.Mode{N: 30}}, {Mode: engine.Mode{N: 60}}, {Mode: engine.Mode{N: 120}},
 	{Mode: engine.Mode{Time: true, N: 15}}, {Mode: engine.Mode{Time: true, N: 30}}, {Mode: engine.Mode{Time: true, N: 60}},
 	{quote: "short"}, {quote: "medium"}, {quote: "long"},
+	{race: true},
 }
 
 func (m mode) kind() string {
 	switch {
+	case m.race:
+		return "race"
 	case m.quote != "":
 		return "quote"
 	case m.Time:
@@ -42,13 +47,16 @@ func (m mode) kind() string {
 }
 
 func (m mode) value() string {
-	if m.quote != "" {
+	switch {
+	case m.race:
+		return ""
+	case m.quote != "":
 		return m.quote
 	}
 	return strconv.Itoa(m.N)
 }
 
-func (m mode) name() string { return m.kind() + " " + m.value() }
+func (m mode) name() string { return strings.TrimSpace(m.kind() + " " + m.value()) }
 
 type quote struct {
 	Text   string `json:"text"`
@@ -76,8 +84,14 @@ func (u *ui) quotesFor(length string) []quote {
 	return out
 }
 
-// available hides quote lengths the current language has no quotes for.
-func (u *ui) available(m mode) bool { return m.quote == "" || len(u.quotesFor(m.quote)) > 0 }
+// available hides quote lengths the current language has no quotes for, and
+// races when no hub is shared (playing locally).
+func (u *ui) available(m mode) bool {
+	if m.race {
+		return u.hub != nil
+	}
+	return m.quote == "" || len(u.quotesFor(m.quote)) > 0
+}
 
 // category is one entry of the settings menu. Values are labels, so
 // filtering and saving work on the same strings the user sees.
@@ -166,6 +180,10 @@ type ui struct {
 	prevBest float64            // best before the shown result
 	pb       bool               // shown result is a new personal best
 	saveErr  error
+
+	hub  *race.Hub  // nil: races unavailable
+	name string     // shown to other racers
+	seat *race.Seat // the room joined, while in race mode
 }
 
 func (u *ui) restart() {
@@ -176,9 +194,17 @@ func (u *ui) restart() {
 	words := u.lists[u.lang]
 	next := func() string { return words[rand.IntN(len(words))] }
 	u.quote = quote{}
-	if m.quote != "" {
+	u.leave()
+	switch {
+	case m.race:
+		u.seat = u.hub.Join(u.name, u.lang)
+		snap := u.seat.Snapshot()
+		u.quote = quote{snap.Text, snap.Source}
+	case m.quote != "":
 		qs := u.quotesFor(m.quote)
 		u.quote = qs[rand.IntN(len(qs))]
+	}
+	if u.quote.Text != "" {
 		ws := strings.Fields(u.quote.Text)
 		m.N = len(ws)
 		next = func() string { w := ws[0]; ws = ws[1:]; return w }
@@ -192,6 +218,29 @@ func (u *ui) restart() {
 }
 
 func (u *ui) korean() bool { return u.lang == "korean" }
+
+func (u *ui) leave() {
+	if u.seat != nil {
+		u.seat.Leave()
+		u.seat = nil
+	}
+}
+
+// held is true while a race has not started: typing waits for the countdown.
+func (u *ui) held() bool { return u.seat != nil && u.seat.Snapshot().State != race.Running }
+
+// report sends this player's lane to the room.
+func (u *ui) report() {
+	if u.seat == nil {
+		return
+	}
+	e := u.e
+	speed := e.WPM()
+	if u.korean() {
+		speed = e.Taja()
+	}
+	u.seat.Report(float64(e.Cur)/float64(len(e.Words)), speed, e.Finished)
+}
 
 // gauge is the live speed meter's animation state.
 type gauge struct {
@@ -336,6 +385,9 @@ func (u *ui) key(ev *tcell.EventKey) {
 		u.menuKey(ev)
 		return
 	}
+	if k := ev.Key(); u.held() && k != tcell.KeyTab && k != tcell.KeyEscape {
+		return
+	}
 	switch ev.Key() {
 	case tcell.KeyTab:
 		u.restart()
@@ -373,28 +425,60 @@ func (u *ui) mouse(ev *tcell.EventMouse) {
 func Run() {
 	s, err := tcell.NewScreen()
 	if err == nil {
-		err = Play(context.Background(), s, storeDir())
+		err = Play(context.Background(), s, storeDir(), nil, "")
 	}
 	if err != nil {
 		panic(err)
 	}
 }
 
-// Play runs one session on screen until the user quits or ctx ends, keeping
-// settings and history in dir ("" = don't save). It owns the screen (Init/Fini).
-func Play(ctx context.Context, s tcell.Screen, dir string) error {
-	u := &ui{dir: dir}
-	// embedded at build time, so only a broken build fails here
+// load reads the embedded word lists and quotes; embedded at build time, so
+// only a broken build fails here.
+func load() (*ui, error) {
+	u := &ui{}
 	if err := json.Unmarshal(data.Words, &u.lists); err != nil {
-		return err
+		return nil, err
 	}
 	if err := json.Unmarshal(data.Quotes, &u.quotes); err != nil {
-		return err
+		return nil, err
 	}
 	for l := range u.lists {
 		u.langs = append(u.langs, l)
 	}
 	slices.Sort(u.langs)
+	return u, nil
+}
+
+// RaceText picks a race room's text: a medium quote, or 30 words for a
+// language without quotes. It is the pick func for race.NewHub.
+func RaceText(lang string) (text, source string) {
+	u, err := load()
+	if err != nil {
+		panic(err) // broken build, see load
+	}
+	u.lang = lang
+	if qs := u.quotesFor("medium"); len(qs) > 0 {
+		q := qs[rand.IntN(len(qs))]
+		return q.Text, q.Source
+	}
+	words := u.lists[lang]
+	ws := make([]string, 30)
+	for i := range ws {
+		ws[i] = words[rand.IntN(len(words))]
+	}
+	return strings.Join(ws, " "), ""
+}
+
+// Play runs one session on screen until the user quits or ctx ends, keeping
+// settings and history in dir ("" = don't save). Sessions sharing hub can race
+// each other under name (nil hub: no races). It owns the screen (Init/Fini).
+func Play(ctx context.Context, s tcell.Screen, dir string, hub *race.Hub, name string) error {
+	u, err := load()
+	if err != nil {
+		return err
+	}
+	u.dir, u.hub, u.name = dir, hub, name
+	defer u.leave()
 
 	st := loadSettings(u.dir)
 	u.mode = modeIndex(st.Mode)
@@ -438,6 +522,7 @@ func Play(ctx context.Context, s tcell.Screen, dir string) error {
 			u.recordFinish()
 			u.animate(now)
 		}
+		u.report()
 		w, h := s.Size()
 		u.draw(s, w, h)
 		s.Show()
