@@ -519,6 +519,9 @@ func Play(ctx context.Context, s tcell.Screen, dir string, hub *race.Hub, name s
 
 	st := loadSettings(u.dir)
 	u.mode = modeIndex(st.Mode)
+	if hub != nil {
+		u.mode = modeIndex("race") // over SSH, land straight in a race room
+	}
 	u.theme = themeIndex(st.Theme)
 	u.tape, u.lang = st.Tape, st.Lang
 	if _, ok := u.lists[u.lang]; !ok {

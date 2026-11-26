@@ -155,13 +155,8 @@ func TestUserDir(t *testing.T) {
 
 func TestRaceOverSSH(t *testing.T) {
 	addr := start(t, 5)
-	joinRace := func() (io.Writer, *syncBuf) {
+	joinRace := func() (io.Writer, *syncBuf) { // sessions start in race mode
 		_, in, out := game(t, dial(t, addr))
-		waitOutput(t, out, "words")
-		for _, k := range []string{"\x1b", "\r", "race", "\r"} { // menu, mode, search, pick
-			in.Write([]byte(k))
-			time.Sleep(100 * time.Millisecond) // a lone ESC needs a pause to not read as Alt
-		}
 		return in, out
 	}
 	ina, a := joinRace()
