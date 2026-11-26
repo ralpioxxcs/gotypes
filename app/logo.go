@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"os"
 	"regexp"
 	"runtime/debug"
 	"strings"
@@ -95,8 +96,9 @@ func titleColors(th theme) (from, to tcell.Color) {
 }
 
 // art draws the logo at x, y in the title gradient. shade, if set, gets each
-// column's gradient color and returns the color to use, or false to hide it.
-func (c canvas) art(x, y int, shade func(col int, fg tcell.Color) (tcell.Color, bool)) {
+// cell's column, rune and gradient color and returns the rune and color to
+// use, or false to hide it.
+func (c canvas) art(x, y int, shade func(col int, r rune, fg tcell.Color) (rune, tcell.Color, bool)) {
 	from, to := titleColors(c.th)
 	span := float64(logoWidth() + 2*(len(logo)-1)) // rows count double: cells are ~2:1
 	for j, l := range logo {
@@ -104,11 +106,12 @@ func (c canvas) art(x, y int, shade func(col int, fg tcell.Color) (tcell.Color, 
 		for _, r := range l {
 			if r != ' ' {
 				fg, show := blend(from, to, float64(xx-x+2*j)/span), true
+				out := r
 				if shade != nil {
-					fg, show = shade(xx-x, fg)
+					out, fg, show = shade(xx-x, r, fg)
 				}
 				if show {
-					c.put(xx, y+j, r, c.st(fg))
+					c.put(xx, y+j, out, c.st(fg))
 				}
 			}
 			xx += rw(r)
@@ -161,11 +164,32 @@ func hueShift(c tcell.Color, deg float64) tcell.Color {
 const (
 	splashName = "gotypes"
 	splashTime = 2400 * time.Millisecond
-	keyFall    = 280 * time.Millisecond // a typed key drops into place from above the screen
-	keyFlash   = 220 * time.Millisecond // a landed key lights up in the text color, then settles
+	keyFall    = 280 * time.Millisecond // drop: a typed key falls into place from above the screen
+	keyFlash   = 220 * time.Millisecond // a key lights up in the text color as it lands, then settles
+	scramble   = 350 * time.Millisecond // scramble: a key cycles random letters this long
+	waveTime   = 700 * time.Millisecond // wave: one shine sweep across the logo
+	flyTime    = 400 * time.Millisecond // fly: the logo glides up to the title row at the end
 )
 
-// keyAt is when splash key k is typed: after a short pause, at an uneven,
+// splashStyle picks the splash effect: drop (default), typo, scramble, wave,
+// press or fly.
+// shortcut: env var GOTYPES_SPLASH to compare the effects; keep one and delete the rest once picked.
+var splashStyle = os.Getenv("GOTYPES_SPLASH")
+
+// splashSteps is what has been typed after each keystroke; the typo splash
+// hits p too early, shows it wrong and backspaces over it.
+func splashSteps() []string {
+	if splashStyle == "typo" {
+		return []string{"g", "go", "got", "gotp", "got", "goty", "gotyp", "gotype", "gotypes"}
+	}
+	var s []string
+	for i := range splashName {
+		s = append(s, splashName[:i+1])
+	}
+	return s
+}
+
+// keyAt is when splash keystroke k lands: after a short pause, at an uneven,
 // human-ish rhythm of 130-220ms per key.
 func keyAt(k int) time.Duration {
 	d := 200 * time.Millisecond
@@ -176,36 +200,76 @@ func keyAt(k int) time.Duration {
 }
 
 // splash types the name in as if on a keyboard: the logo is split into one
-// slice per letter, each dropping in on its keystroke and flashing as it lands, behind a
+// slice per letter, each appearing on its keystroke with a flash, behind a
 // full-height caret that blinks once all are typed, the way a test looks
-// before the first key. Without room for the logo, the name itself is typed.
-func (c canvas) splash(w, h int, since time.Duration) {
-	keys := len(splashName)
-	typed := 0
-	for typed < keys && since >= keyAt(typed) {
-		typed++
+// before the first key. splashStyle adds the effect; titleY is where the main
+// screen draws the logo (fly ends there). Without room for the logo, the name
+// itself is typed.
+func (c canvas) splash(w, h int, since time.Duration, titleY int) {
+	steps := splashSteps()
+	n := 0
+	for n < len(steps) && since >= keyAt(n) {
+		n++
 	}
+	buf := ""
+	if n > 0 {
+		buf = steps[n-1]
+	}
+	done, end, keys := n == len(steps), keyAt(len(steps)-1), len(splashName)
 	caret := c.st(c.th.bg).Background(c.th.caret)
-	showCaret := typed < keys || since/(300*time.Millisecond)%2 == 0
+	showCaret := !done || since/(300*time.Millisecond)%2 == 0
 	if lw, lh := logoWidth(), len(logo); lw+2 <= w && lh <= h {
 		x, y := min((w-lw)/2, w-lw-2), (h-lh)/2 // same column as the title, caret still fits
-		for k := range typed {
-			age := since - keyAt(k)
-			p := min(float64(age)/float64(keyFall), 1)
-			dy := int(math.Round(float64(-(y + lh)) * (1 - p*p))) // from above the screen, speeding up like a drop
-			c.art(x, y+dy, func(col int, fg tcell.Color) (tcell.Color, bool) {
+		if t := since - (splashTime - flyTime); splashStyle == "fly" && titleY >= 1 && t > 0 {
+			p := float64(t) / float64(flyTime)
+			y += int(math.Round(float64(titleY-y) * (1 - (1-p)*(1-p)))) // ease out
+			showCaret = false
+		}
+		for k := range len(buf) {
+			set := n - 1 // the keystroke that put buf[k] there
+			for set > 0 && len(steps[set-1]) > k && steps[set-1][k] == buf[k] {
+				set--
+			}
+			age := since - keyAt(set)
+			letter, wrong := rune(buf[k]), buf[k] != splashName[k]
+			dy, flash := 0, age
+			switch splashStyle {
+			case "", "drop":
+				p := min(float64(age)/float64(keyFall), 1)
+				dy, flash = int(math.Round(float64(-(y+lh))*(1-p*p))), age-keyFall // speeding up like a drop
+			case "scramble":
+				if age < scramble {
+					letter = rune('a' + (k*7+int(since/(60*time.Millisecond))*11)%26)
+				}
+				flash = age - scramble
+			case "press": // once typed, the keys go down one after another
+				if t := since - end - 300*time.Millisecond - time.Duration(k)*90*time.Millisecond; t >= 0 && t < 120*time.Millisecond {
+					dy = 1
+				}
+			}
+			c.art(x, y+dy, func(col int, r rune, fg tcell.Color) (rune, tcell.Color, bool) {
 				if col*keys/lw != k {
-					return fg, false
+					return r, fg, false
 				}
-				if land := age - keyFall; land >= 0 && land < keyFlash {
-					fg = blend(c.th.text, fg, float64(land)/float64(keyFlash)) // flash on landing
+				if r == rune(splashName[k]) {
+					r = letter
 				}
-				return fg, true
+				switch {
+				case wrong:
+					fg = c.th.err
+				case splashStyle == "wave" && done: // a bright band sweeping left to right
+					pos := float64((since-end)%waveTime)/float64(waveTime)*float64(lw+8) - 4
+					fg = blend(c.th.text, fg, min(math.Abs(float64(col)-pos)/4, 1))
+				}
+				if flash >= 0 && flash < keyFlash {
+					fg = blend(c.th.text, fg, float64(flash)/float64(keyFlash))
+				}
+				return r, fg, true
 			})
 		}
 		if showCaret {
-			cx := x + typed*lw/keys
-			if typed == keys {
+			cx := x + len(buf)*lw/keys
+			if done {
 				cx++ // rest one cell clear of the art
 			}
 			for j := range lh {
@@ -214,7 +278,7 @@ func (c canvas) splash(w, h int, since time.Duration) {
 		}
 		return
 	}
-	x := c.print((w-keys-1)/2, h/2, splashName[:typed], c.st(c.th.text).Bold(true))
+	x := c.print((w-keys-1)/2, h/2, buf, c.st(c.th.text).Bold(true))
 	if showCaret {
 		c.put(x, h/2, ' ', caret)
 	}
