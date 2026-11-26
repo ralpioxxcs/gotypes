@@ -80,37 +80,42 @@ func TestPlayQuitsOnCtrlC(t *testing.T) {
 	}
 }
 
-func TestSplashTypesNameThenAnyKeySkips(t *testing.T) {
+func TestSplashSweepsLogoThenAnyKeySkips(t *testing.T) {
 	scr := tcell.NewSimulationScreen("UTF-8")
 	if err := scr.Init(); err != nil {
 		t.Fatal(err)
 	}
-	scr.SetSize(80, 24)
 	u := &ui{lists: map[string][]string{"english": {"word"}}, langs: []string{"english"}, lang: "english", mode: 1}
 	u.restart()
-	screen := func() string {
-		u.draw(scr, 80, 24)
+	screen := func(w, h int) string {
+		scr.SetSize(w, h)
+		u.draw(scr, w, h)
 		scr.Show()
-		cells, w, h := scr.GetContents()
+		cells, cw, ch := scr.GetContents()
 		var b strings.Builder
-		for i := range w * h {
+		for i := range cw * ch {
 			if len(cells[i].Runes) > 0 {
 				b.WriteRune(cells[i].Runes[0])
 			}
 		}
 		return b.String()
 	}
+	top := strings.TrimSpace(logo[0]) // whatever the art is
+	first := string([]rune(top)[:1])
 	for _, tc := range []struct {
 		at        time.Duration
 		has, hasn string
-	}{{0, "", "got"}, {360 * time.Millisecond, "got", "goty"}, {time.Second, "gotypes", "words"}} {
+	}{{0, "", first}, {400 * time.Millisecond, first, top}, {time.Second, top, "words"}} {
 		u.openedAt = time.Now().Add(-tc.at)
-		if s := screen(); !strings.Contains(s, tc.has) || strings.Contains(s, tc.hasn) {
+		if s := screen(80, 24); !strings.Contains(s, tc.has) || strings.Contains(s, tc.hasn) {
 			t.Errorf("at %v: want %q and not %q", tc.at, tc.has, tc.hasn)
 		}
 	}
+	if s := screen(logoWidth(), 24); strings.Contains(s, first) || !strings.Contains(s, "gotypes") {
+		t.Error("too narrow for the logo: the name is typed instead")
+	}
 	u.key(tcell.NewEventKey(tcell.KeyRune, 'x', tcell.ModNone))
-	if s := screen(); !strings.Contains(s, "words") || u.e.Started {
+	if s := screen(80, 24); !strings.Contains(s, "words") || u.e.Started {
 		t.Fatal("a key should skip the splash without typing")
 	}
 }

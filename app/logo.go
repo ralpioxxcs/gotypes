@@ -57,31 +57,43 @@ var logo = strings.Split(strings.Trim(`
 // diagonal gradient from main to main's hue turned 90°, and the version small
 // at its lower right; skipped when the screen has no room for it.
 func (c canvas) logo(w, y0 int) {
-	y := y0 - len(logo) - 1
-	lw := 0
-	for _, l := range logo {
-		lw = max(lw, runewidth.StringWidth(l))
-	}
+	y, lw := y0-len(logo)-1, logoWidth()
 	if y < 1 || lw > w {
 		return
 	}
 	x := (w - lw) / 2
+	c.art(x, y, lw)
+	if x+lw+2+len(buildVersion) <= w {
+		c.print(x+lw+2, y+len(logo)-1, buildVersion, c.st(c.th.sub))
+	}
+}
+
+func logoWidth() int {
+	lw := 0
+	for _, l := range logo {
+		lw = max(lw, runewidth.StringWidth(l))
+	}
+	return lw
+}
+
+// art draws the logo's first cols columns at x, y in the title gradient.
+func (c canvas) art(x, y, cols int) {
 	from, to := c.th.main, hueShift(c.th.main, 90)
 	if to == from { // grey main: no hue to turn, fade to sub instead
 		to = c.th.sub
 	}
-	span := float64(lw + 2*(len(logo)-1)) // rows count double: cells are ~2:1
+	span := float64(logoWidth() + 2*(len(logo)-1)) // rows count double: cells are ~2:1
 	for j, l := range logo {
 		xx := x
 		for _, r := range l {
+			if xx-x+rw(r) > cols {
+				break
+			}
 			if r != ' ' {
 				c.put(xx, y+j, r, c.st(blend(from, to, float64(xx-x+2*j)/span)))
 			}
 			xx += rw(r)
 		}
-	}
-	if x+lw+2+len(buildVersion) <= w {
-		c.print(x+lw+2, y+len(logo)-1, buildVersion, c.st(c.th.sub))
 	}
 }
 
@@ -129,13 +141,31 @@ func hueShift(c tcell.Color, deg float64) tcell.Color {
 
 const splashTime = 1400 * time.Millisecond
 
-// splash types the name out under a solid caret, then blinks the caret, the
-// way a test looks before the first key.
+// splash sweeps the logo in behind a full-height caret, then blinks the caret
+// at its right, the way a test looks before the first key. Without room for
+// the logo the name is typed out instead.
 func (c canvas) splash(w, h int, since time.Duration) {
+	caret := c.st(c.th.bg).Background(c.th.caret)
+	blink := since/(300*time.Millisecond)%2 == 0
+	if lw, lh := logoWidth(), len(logo); lw+2 <= w && lh <= h {
+		x, y := min((w-lw)/2, w-lw-2), (h-lh)/2 // same column as the title, caret still fits
+		cols := min(lw, max(0, int(float64(lw)*float64(since-150*time.Millisecond)/float64(600*time.Millisecond))))
+		c.art(x, y, cols)
+		if cols < lw || blink {
+			cx := x + cols
+			if cols == lw {
+				cx++ // rest one cell clear of the art
+			}
+			for j := range lh {
+				c.put(cx, y+j, ' ', caret)
+			}
+		}
+		return
+	}
 	const name = "gotypes"
 	n := min(len(name), max(0, int((since-150*time.Millisecond)/(70*time.Millisecond))))
 	x := c.print((w-len(name)-1)/2, h/2, name[:n], c.st(c.th.text).Bold(true))
-	if n < len(name) || since/(300*time.Millisecond)%2 == 0 {
-		c.put(x, h/2, ' ', c.st(c.th.bg).Background(c.th.caret))
+	if n < len(name) || blink {
+		c.put(x, h/2, ' ', caret)
 	}
 }
