@@ -214,6 +214,7 @@ func (c canvas) tape(e *engine.Engine, x, y, width int) (int, int) {
 
 func (c canvas) modeBar(u *ui, x, y, width int) {
 	xx, kind := x, ""
+	u.modeHits = u.modeHits[:0]
 	for i, m := range modes {
 		if !u.available(m) {
 			continue
@@ -227,13 +228,19 @@ func (c canvas) modeBar(u *ui, x, y, width int) {
 			if modes[u.mode].kind() == k {
 				st = c.st(c.th.text)
 			}
+			x0 := xx
 			xx = c.print(xx, y, k+" ", st)
+			if modes[u.mode].kind() != k { // the label switches to the kind's first value
+				u.modeHits = append(u.modeHits, modeHit{x0, xx - 1, y, i})
+			}
 		}
 		val := c.st(c.th.sub)
 		if i == u.mode {
 			val = c.st(c.th.main).Bold(true)
 		}
+		x0 := xx
 		xx = c.print(xx, y, m.value()+" ", val)
+		u.modeHits = append(u.modeHits, modeHit{x0, xx - 1, y, i})
 	}
 	c.print(x+width-runewidth.StringWidth(u.lang), y, u.lang, c.st(c.th.sub))
 }
@@ -595,6 +602,13 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 			cx, cy = c.tape(e, x0, y0+5, cw)
 		} else {
 			cx, cy = c.paragraph(e, x0, y0+5, cw)
+		}
+		if u.quote.Source != "" { // below the text, right-aligned
+			src, sy := "— "+u.quote.Source, y0+8
+			if u.tape {
+				sy = y0 + 7
+			}
+			c.print(max(x0, x0+cw-runewidth.StringWidth(src)), sy, src, c.st(th.sub))
 		}
 		if u.korean() && !u.menuOpen {
 			s.ShowCursor(cx, cy) // the IME draws its in-progress syllable at the terminal cursor

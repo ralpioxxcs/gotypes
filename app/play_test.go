@@ -149,3 +149,46 @@ func TestSplashStyles(t *testing.T) {
 		t.Fatalf("typo: p typed in y's place: %q", r)
 	}
 }
+
+func TestModeBarClicksAndQuoteSource(t *testing.T) {
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		t.Fatal(err)
+	}
+	u := &ui{lists: map[string][]string{"english": {"word"}}, langs: []string{"english"}, lang: "english", mode: 1,
+		quotes: map[string][]quote{"english": {{Text: "a b", Source: "Someone, Some Book"}}}}
+	u.restart()
+	draw := func() string {
+		u.draw(scr, 80, 24)
+		scr.Show()
+		cells, _, _ := scr.GetContents()
+		var b strings.Builder
+		for _, c := range cells {
+			if len(c.Runes) > 0 {
+				b.WriteRune(c.Runes[0])
+			}
+		}
+		return b.String()
+	}
+	click := func(name string) {
+		draw()
+		want := modeIndex(name)
+		for _, h := range u.modeHits {
+			if h.mode == want {
+				for _, b := range []tcell.ButtonMask{tcell.Button1, tcell.ButtonNone} { // press, release
+					u.mouse(tcell.NewEventMouse(h.x0, h.y, b, tcell.ModNone))
+				}
+				return
+			}
+		}
+		t.Fatalf("%s not on the mode bar", name)
+	}
+	click("time 60")
+	if modes[u.mode].name() != "time 60" || !u.e.Mode.Time {
+		t.Fatalf("clicking 60 under time: got %s", modes[u.mode].name())
+	}
+	click("quote short") // the "quote" label picks its first length
+	if s := draw(); modes[u.mode].name() != "quote short" || !strings.Contains(s, "— Someone, Some Book") {
+		t.Fatalf("quote mode should show its source under the text: %s", modes[u.mode].name())
+	}
+}

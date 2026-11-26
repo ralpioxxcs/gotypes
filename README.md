@@ -31,6 +31,7 @@ Run `gotypes` (or `go run .` in the source root) and start typing.
 | <kbd>esc</kbd> | settings: mode, text, language, theme. Enter a category, type to filter, enter to apply (themes preview as you move) |
 | <kbd>ctrl</kbd>+<kbd>w</kbd> / <kbd>alt</kbd>+<kbd>backspace</kbd> | delete word |
 | <kbd>←</kbd> <kbd>→</kbd> or mouse | inspect a second on the result chart |
+| click | pick a mode on the mode bar (`words 15 30 …`) |
 | <kbd>ctrl</kbd>+<kbd>c</kbd> | quit |
 
 A truecolor terminal is recommended for accurate theme colors.

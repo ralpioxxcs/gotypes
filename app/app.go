@@ -168,6 +168,8 @@ type ui struct {
 	sel        int       // selected second on the result chart, -1 = last
 	openedAt   time.Time // session start, for the splash; zero = no splash
 	splash     string    // the splash effect, see splashStyles
+	modeHits   []modeHit // where the mode bar drew each value, for clicks
+	mouseDown  bool      // button 1 held at the last mouse event, so a press acts once
 	finishedAt time.Time
 	gauge      gauge
 	chart      chartGeom // last drawn chart, for mouse hit-testing
@@ -431,7 +433,22 @@ func (u *ui) key(ev *tcell.EventKey) {
 	u.recordFinish()
 }
 
+// modeHit is the cells [x0, x1) on row y where the mode bar drew mode.
+type modeHit struct{ x0, x1, y, mode int }
+
 func (u *ui) mouse(ev *tcell.EventMouse) {
+	down := ev.Buttons()&tcell.Button1 != 0
+	press := down && !u.mouseDown
+	u.mouseDown = down
+	if x, y := ev.Position(); press && !u.menuOpen && time.Since(u.openedAt) >= splashTime {
+		for _, h := range u.modeHits {
+			if y == h.y && x >= h.x0 && x < h.x1 && h.mode != u.mode {
+				categories[0].apply(u, modes[h.mode].name())
+				u.saveSettings()
+				return
+			}
+		}
+	}
 	g := u.chart
 	if u.e.Finished && !u.menuOpen && g.n > 0 {
 		x, y := ev.Position()
