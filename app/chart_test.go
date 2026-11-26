@@ -41,3 +41,32 @@ func TestChartDrawsEndToEnd(t *testing.T) {
 		}
 	}
 }
+
+func TestLogoOnlyWhenItFits(t *testing.T) {
+	scr := tcell.NewSimulationScreen("UTF-8")
+	if err := scr.Init(); err != nil {
+		t.Fatal(err)
+	}
+	c := canvas{scr, themes[0]}
+	has := func() bool {
+		cells, w, h := scr.GetContents()
+		for i := range w * h {
+			if len(cells[i].Runes) > 0 && cells[i].Runes[0] == '■' {
+				return true
+			}
+		}
+		return false
+	}
+	for _, tc := range []struct {
+		w, y0 int
+		want  bool
+	}{{100, 10, true}, {100, 7, false}, {60, 10, false}} {
+		scr.SetSize(tc.w, 30)
+		scr.Clear()
+		c.logo(tc.w, tc.y0)
+		scr.Show()
+		if has() != tc.want {
+			t.Errorf("w=%d y0=%d: logo drawn = %v", tc.w, tc.y0, !tc.want)
+		}
+	}
+}

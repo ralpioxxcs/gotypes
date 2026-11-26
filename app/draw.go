@@ -573,6 +573,7 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 	s.HideCursor()
 	if !e.Finished {
 		y0 := max(1, (h-8-lanes)/2)
+		c.logo(w, y0)
 		c.modeBar(u, x0, y0, cw)
 		switch {
 		case e.Started:
@@ -603,6 +604,7 @@ func (u *ui) draw(s tcell.Screen, w, h int) {
 		}
 	} else {
 		y0 := max(1, (h-24-lanes)/2)
+		c.logo(w, y0)
 		c.modeBar(u, x0, y0, cw)
 		if u.quote.Source != "" {
 			c.print(x0, y0+1, "— "+u.quote.Source, c.st(th.sub))
